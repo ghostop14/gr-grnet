@@ -27,7 +27,9 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 list(APPEND grnet_sources
     tcp_sink_impl.cc
+    tcp_source_impl.cc
     udp_sink_impl.cc
+    udp_source_impl.cc
 )
 
 set(grnet_sources "${grnet_sources}" PARENT_SCOPE)
@@ -100,6 +102,30 @@ target_link_libraries(
 )
 
 install(TARGETS test-netsink DESTINATION /usr/bin RUNTIME)
+
+########################################################################
+# Build test-netsource
+########################################################################
+list(APPEND test_netsource_sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_netsource.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/tcp_source_impl.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/udp_source_impl.cc
+)
+
+add_executable(test-netsource ${test_netsource_sources})
+
+
+target_link_libraries(
+  test-netsource
+  ${GNURADIO_RUNTIME_LIBRARIES}
+  ${Boost_LIBRARIES}
+  boost_thread
+  pthread
+  z
+  gnuradio-grnet
+)
+
+install(TARGETS test-netsource DESTINATION /usr/bin RUNTIME)
 
 ########################################################################
 # Print summary

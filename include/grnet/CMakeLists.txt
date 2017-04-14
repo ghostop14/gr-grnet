@@ -22,5 +22,9 @@
 ########################################################################
 install(FILES
     api.h
-    tcp_sink.h DESTINATION include/grnet
+    tcp_sink.h 
+    udp_sink.h 
+    tcp_source.h 
+    udp_source.h 
+    DESTINATION include/grnet
 )

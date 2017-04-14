@@ -18,17 +18,18 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef INCLUDED_GRNET_TCP_SINK_IMPL_H
-#define INCLUDED_GRNET_TCP_SINK_IMPL_H
+#ifndef INCLUDED_GRNET_tcp_source_impl_H
+#define INCLUDED_GRNET_tcp_source_impl_H
 
-#include <grnet/tcp_sink.h>
+#include <grnet/tcp_source.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <queue>
 
 namespace gr {
   namespace grnet {
 
-    class tcp_sink_impl : public tcp_sink
+    class tcp_source_impl : public tcp_source
     {
      private:
         size_t d_itemsize;
@@ -39,16 +40,22 @@ namespace gr {
 
         boost::asio::io_service d_io_service;
         boost::asio::ip::tcp::endpoint d_endpoint;
-        // std::set<boost::asio::ip::tcp::socket *> tcpsocket;
         boost::asio::ip::tcp::socket *tcpsocket;
+        boost::asio::ip::tcp::acceptor d_acceptor;
+
+    	std::queue<char> localQueue;
+        boost::asio::streambuf read_buffer;
 
         boost::mutex d_mutex;
 
      public:
-      tcp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,bool noblock=true);
-      ~tcp_sink_impl();
+      tcp_source_impl(size_t itemsize,size_t vecLen, int port);
+      ~tcp_source_impl();
 
       bool stop();
+
+      size_t dataAvailable();
+      size_t netDataAvailable();
 
       // Where all the action really happens
       int work_test(int noutput_items,
@@ -62,5 +69,5 @@ namespace gr {
   } // namespace grnet
 } // namespace gr
 
-#endif /* INCLUDED_GRNET_TCP_SINK_IMPL_H */
+#endif /* INCLUDED_GRNET_tcp_source_impl_H */
 

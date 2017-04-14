@@ -25,6 +25,8 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ip/udp.hpp>
 
+#include "udpHeaderTypes.h"
+
 namespace gr {
   namespace grnet {
 
@@ -47,16 +49,7 @@ namespace gr {
         boost::asio::ip::udp::endpoint d_endpoint;
         boost::asio::ip::udp::socket *udpsocket;
 
-        boost::shared_ptr<uint8_t> d_buf;
-        enum {
-            BUF_SIZE = 256 * 1024,
-        };
-
-        int d_writing;
-        boost::condition_variable d_writing_cond;
-        boost::mutex d_writing_mut;
-
-        void do_write(const boost::system::error_code& error, std::size_t len);
+        boost::mutex d_mutex;
 
      public:
       udp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType=HEADERTYPE_NONE);

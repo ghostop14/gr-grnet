@@ -20,28 +20,26 @@
 #include <chrono>
 #include <boost/algorithm/string/replace.hpp>
 
-#include "tcp_sink_impl.h"
-#include "udp_sink_impl.h"
+#include "tcp_source_impl.h"
+#include "udp_source_impl.h"
 
 using namespace gr::grnet;
 
 int
 main (int argc, char **argv)
 {
-	std::string host = "127.0.0.1";
 	int port=2000;
-	int headerType=HEADERTYPE_NONE;
 	bool useTCP=true;
+	int headerType=HEADERTYPE_NONE;
 
 	if (argc > 1) {
 		// 1 is the file name
 		if (strcmp(argv[1],"--help")==0) {
 			std::cout << std::endl;
-			std::cout << "Usage: [--udp] [--host=<ip>] [--port=<port>] [--header | --header-crc]" << std::endl;
+			std::cout << "Usage: [--udp] [--port=<port>] [--header | --header-crc]" << std::endl;
 			std::cout << "Writes 819200 bytes to specified host and port (default is localhost:2000).  Default is TCP unless --udp is provided." << std::endl;
-			std::cout << "The default data is the pattern string 0123456789 repeating.  The resulting throughput is then timed and shown." << std::endl;
-			std::cout << "For udp, if --header is supplied, a 32-bit sequence number and 32-bit data size field are sent as a packet header." << std::endl;
-			std::cout << "For udp, if --header-crc is supplied, the header is sent along with a trailing 32-bit CRC." << std::endl;
+			std::cout << "For udp, if --header is supplied, a 32-bit sequence number and 32-bit data size field are expected as a packet header." << std::endl;
+			std::cout << "For udp, if --header-crc is supplied, the header is expected along with a trailing 32-bit CRC." << std::endl;
 			std::cout << std::endl;
 			exit(0);
 		}
@@ -61,11 +59,6 @@ main (int argc, char **argv)
 				useTCP=false;
 			}
 
-			if (param.find("--host") != std::string::npos) {
-				host=param;
-				boost::replace_all(host,"--host=","");
-			}
-
 			if (param.find("--port") != std::string::npos) {
 				boost::replace_all(param,"--port=","");
 				port=atoi(param.c_str());
@@ -75,16 +68,18 @@ main (int argc, char **argv)
 	}
 
 	int vecLen=64;
-	std::cout << "Testing netsink.  Sending test data to " << host << ":" << port << std::endl;
+	std::cout << "Testing netsource.  Listening on port " << port << std::endl;
 
-	tcp_sink_impl *testTCP=NULL;
-	udp_sink_impl *testUDP=NULL;
+	tcp_source_impl *testTCP=NULL;
+	udp_source_impl *testUDP=NULL;
 
+	std::cout << "Waiting for connection..." << std::endl;
 	if (useTCP)
-		testTCP = new tcp_sink_impl(sizeof(char),vecLen,host, port);
+		testTCP = new tcp_source_impl(sizeof(char),vecLen,port);
 	else
-		testUDP = new udp_sink_impl(sizeof(char),vecLen,host, port,headerType);
+		testUDP = new udp_source_impl(sizeof(char),vecLen,port);
 
+	std::cout << "Connected.  Waiting for data..." << std::endl;
 	int i;
 	int iterations=100;
 	std::chrono::time_point<std::chrono::steady_clock> start, end;
@@ -96,18 +91,22 @@ main (int argc, char **argv)
 	std::string testString="";
 	int counter=0;
 	int localblocksize=8192;
+	int numBytes;
 
-	for (int i=0;i<localblocksize;i++) {
-		testString += std::to_string(counter);
-		counter++;
+	char buffer[localblocksize];
 
-		if (counter > 9)
-			counter = 0;
-	}
-
-	inputPointers.push_back(testString.c_str());
+	outputPointers.push_back((void *)buffer);
 
 	if (useTCP) {
+
+		while (testTCP->dataAvailable() < localblocksize) {
+			sleep(1);
+		}
+
+		std::cout << "Data received.  Processing..." << std::endl;
+
+		numBytes = localblocksize;
+
 		start = std::chrono::steady_clock::now();
 		for (i=0;i<iterations;i++) {
 			testTCP->work_test(localblocksize/vecLen,inputPointers,outputPointers);
@@ -116,12 +115,21 @@ main (int argc, char **argv)
 		end = std::chrono::steady_clock::now();
 	}
 	else {
-		start = std::chrono::steady_clock::now();
-		for (i=0;i<iterations;i++) {
-			testUDP->work_test(localblocksize/vecLen,inputPointers,outputPointers);
+		while (testUDP->dataAvailable() < localblocksize) {
+			sleep(1);
 		}
 
+		numBytes = testUDP->dataAvailable();
+
+		iterations = 1;
+
+		std::cout << "Data received.  Processing " <<  numBytes << " bytes" << std::endl;
+		start = std::chrono::steady_clock::now();
+		testUDP->work_test(localblocksize/vecLen,inputPointers,outputPointers);
+
 		end = std::chrono::steady_clock::now();
+
+		numBytes = localblocksize;
 	}
 
 	elapsed_seconds = end-start;

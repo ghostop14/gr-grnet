@@ -43,9 +43,7 @@ namespace gr {
       : gr::sync_block("udp_sink",
               gr::io_signature::make(0, 0, 0),
               gr::io_signature::make(1, 1, itemsize*vecLen)),
-    d_itemsize(itemsize), d_veclen(vecLen),d_header_type(headerType),d_seq_num(0),d_header_size(0),
-    d_buf(new uint8_t[BUF_SIZE]),
-    d_writing(0)
+    d_itemsize(itemsize), d_veclen(vecLen),d_header_type(headerType),d_seq_num(0),d_header_size(0)
     {
     	d_block_size = d_itemsize * d_veclen;
 
@@ -83,12 +81,6 @@ namespace gr {
     }
 
     bool udp_sink_impl::stop() {
-        gr::thread::scoped_lock guard(d_writing_mut);
-        /*
-        while (d_writing) {
-          d_writing_cond.wait(guard);
-        }
-		*/
         if (udpsocket) {
         	udpsocket->close();
 
@@ -100,31 +92,15 @@ namespace gr {
         return true;
     }
 
-    void
-	udp_sink_impl::do_write(const boost::system::error_code& error,size_t len)
-    {
-    	// Only used for async_write.  Not using this now but leaving it in.
-
-        gr::thread::scoped_lock guard(d_writing_mut);
-        --d_writing;
-
-        if (error) {
-        	std::cout << "Boost error code " << error << " sending data." << std::endl;
-        }
-      d_writing_cond.notify_one();
-    }
-
     int
     udp_sink_impl::work_test(int noutput_items,
         gr_vector_const_void_star &input_items,
         gr_vector_void_star &output_items)
     {
+        gr::thread::scoped_lock guard(d_mutex);
+
         const char *in = (const char *) input_items[0];
     	unsigned int noi = noutput_items * d_block_size;
-
-    	// Set the amount of data we'll use.  noi or BUFF_SIZE
-        size_t data_len = std::min(size_t(BUF_SIZE), (size_t)noi);
-        data_len -= data_len % d_itemsize;
 
         if (d_header_type != HEADERTYPE_NONE) {
         	if (d_seq_num == 0xFFFFFFFF)
@@ -139,30 +115,19 @@ namespace gr {
             }
             udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size),d_endpoint);
         }
-
-        // Copy our appropriate size to our local buffer
-        memcpy(d_buf.get(), in, data_len);
-
         // send it.
         // We could have done this async, however with guards and waits it has the same effect.
         // It just doesn't get detected till the next frame.
-        udpsocket->send_to(boost::asio::buffer(d_buf.get(), data_len),d_endpoint);
+        udpsocket->send_to(boost::asio::buffer((const void *)in, noi),d_endpoint);
 
         if (d_header_type == HEADERTYPE_SEQSIZECRC) {
         	unsigned long  crc = crc32(0L, Z_NULL, 0);
-        	crc = crc32(crc, (const unsigned char*)d_buf.get(), data_len);
+        	crc = crc32(crc, (const unsigned char*)in, noi);
             memcpy((void *)tmpHeaderBuff, (void *)&crc, sizeof(crc));
             udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, sizeof(crc)),d_endpoint);
         }
-        /*
-        if (ec) {
-        	std::cout << "Boost write error: " << ec << std::endl;
-        }
-        else {
-        	std::cout << "Wrote " << returnedBytes << "/" << data_len << " bytes." << std::endl;
-        }
-        */
-        return data_len / d_veclen;
+
+        return noutput_items;
     }
 
     int
@@ -170,12 +135,10 @@ namespace gr {
         gr_vector_const_void_star &input_items,
         gr_vector_void_star &output_items)
     {
+        gr::thread::scoped_lock guard(d_mutex);
+
         const char *in = (const char *) input_items[0];
     	unsigned int noi = noutput_items * d_block_size;
-
-    	// Set the amount of data we'll use.  noi or BUFF_SIZE
-        size_t data_len = std::min(size_t(BUF_SIZE), (size_t)noi);
-        data_len -= data_len % d_itemsize;
 
         if (d_header_type != HEADERTYPE_NONE) {
         	if (d_seq_num == 0xFFFFFFFF)
@@ -190,29 +153,19 @@ namespace gr {
             }
             udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size),d_endpoint);
         }
-        // Copy our appropriate size to our local buffer
-        memcpy(d_buf.get(), in, data_len);
-
         // send it.
         // We could have done this async, however with guards and waits it has the same effect.
         // It just doesn't get detected till the next frame.
-        udpsocket->send_to(boost::asio::buffer(d_buf.get(), data_len),d_endpoint);
+        udpsocket->send_to(boost::asio::buffer((const void *)in, noi),d_endpoint);
 
         if (d_header_type == HEADERTYPE_SEQSIZECRC) {
         	unsigned long  crc = crc32(0L, Z_NULL, 0);
-        	crc = crc32(crc, (const unsigned char*)d_buf.get(), data_len);
+        	crc = crc32(crc, (const unsigned char*)in, noi);
             memcpy((void *)tmpHeaderBuff, (void *)&crc, sizeof(crc));
             udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, sizeof(crc)),d_endpoint);
         }
-        /*
-        if (ec) {
-        	std::cout << "Boost write error: " << ec << std::endl;
-        }
-        else {
-        	std::cout << "Wrote " << returnedBytes << "/" << data_len << " bytes." << std::endl;
-        }
-        */
-        return data_len / d_veclen;
+
+        return noutput_items;
     }
   } /* namespace grnet */
 } /* namespace gr */

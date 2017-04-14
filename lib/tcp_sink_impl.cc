@@ -31,6 +31,8 @@ namespace gr {
     tcp_sink::sptr
     tcp_sink::make(size_t itemsize,size_t vecLen,const std::string &host, int port,bool noblock)
     {
+    	std::cout << "TCP Sink connecting to " << host << ":" << port << std::endl;
+
       return gnuradio::get_initial_sptr
         (new tcp_sink_impl(itemsize, vecLen,host, port, noblock));
     }
@@ -42,14 +44,14 @@ namespace gr {
       : gr::sync_block("tcp_sink",
               gr::io_signature::make(1, 1, itemsize*vecLen),
               gr::io_signature::make(0, 0, 0)),
-    d_itemsize(itemsize), d_veclen(vecLen),
-    d_buf(new uint8_t[BUF_SIZE]),
-    d_writing(0)
+    d_itemsize(itemsize), d_veclen(vecLen)
     {
     	d_block_size = d_itemsize * d_veclen;
 
+//    	std::cout << "TCP Sink connecting to " << host << ":" << port << std::endl;
+
         std::string s__port = (boost::format("%d") % port).str();
-        std::string s__host = host.empty() ? std::string("localhost") : host;
+        std::string s__host = host; // host.empty() ? std::string("localhost") : host;
         boost::asio::ip::tcp::resolver resolver(d_io_service);
         boost::asio::ip::tcp::resolver::query query(s__host, s__port,
             boost::asio::ip::resolver_query_base::passive);
@@ -71,11 +73,6 @@ namespace gr {
     }
 
     bool tcp_sink_impl::stop() {
-        gr::thread::scoped_lock guard(d_writing_mut);
-        while (d_writing) {
-          d_writing_cond.wait(guard);
-        }
-
         if (tcpsocket) {
 			tcpsocket->close();
 
@@ -87,49 +84,23 @@ namespace gr {
         return true;
     }
 
-    void
-	tcp_sink_impl::do_write(const boost::system::error_code& error,size_t len)
-    {
-    	// Only used for async_write.  Not using this now but leaving it in.
-
-        gr::thread::scoped_lock guard(d_writing_mut);
-        --d_writing;
-
-        if (error) {
-        	std::cout << "Boost error code " << error << " sending data." << std::endl;
-        }
-      d_writing_cond.notify_one();
-    }
-
     int
     tcp_sink_impl::work_test(int noutput_items,
         gr_vector_const_void_star &input_items,
         gr_vector_void_star &output_items)
     {
+        gr::thread::scoped_lock guard(d_mutex);
+
         const char *in = (const char *) input_items[0];
     	unsigned int noi = noutput_items * d_block_size;
-
-    	// Set the amount of data we'll use.  noi or BUFF_SIZE
-        size_t data_len = std::min(size_t(BUF_SIZE), (size_t)noi);
-        data_len -= data_len % d_itemsize;
-
-        // Copy our appropriate size to our local buffer
-        memcpy(d_buf.get(), in, data_len);
 
         // send it.
         // We could have done this async, however with guards and waits it has the same effect.
         // It just doesn't get detected till the next frame.
-        boost::asio::write(*tcpsocket, boost::asio::buffer(d_buf.get(), data_len),ec);
+        // boost::asio::write(*tcpsocket, boost::asio::buffer(d_buf.get(), data_len),ec);
+        boost::asio::write(*tcpsocket, boost::asio::buffer((const void *)in, noi),ec);
 
-        /*
-        if (ec) {
-        	std::cout << "Boost write error: " << ec << std::endl;
-        }
-        else {
-        	std::cout << "Wrote " << returnedBytes << "/" << data_len << " bytes." << std::endl;
-        }
-        */
-        return data_len / d_veclen;
+        return noutput_items;
     }
 
     int
@@ -137,61 +108,19 @@ namespace gr {
         gr_vector_const_void_star &input_items,
         gr_vector_void_star &output_items)
     {
+        gr::thread::scoped_lock guard(d_mutex);
+
         const char *in = (const char *) input_items[0];
     	unsigned int noi = noutput_items * d_block_size;
-
-    	// Set the amount of data we'll use.  noi or BUFF_SIZE
-        size_t data_len = std::min(size_t(BUF_SIZE), (size_t)noi);
-        data_len -= data_len % d_itemsize;
-
-        // Copy our appropriate size to our local buffer
-        memcpy(d_buf.get(), in, data_len);
 
         // send it.
         // We could have done this async, however with guards and waits it has the same effect.
         // It just doesn't get detected till the next frame.
-        boost::asio::write(*tcpsocket, boost::asio::buffer(d_buf.get(), data_len),ec);
+        // boost::asio::write(*tcpsocket, boost::asio::buffer(d_buf.get(), data_len),ec);
+        boost::asio::write(*tcpsocket, boost::asio::buffer((const void *)in, noi),ec);
 
-        /*
-        if (ec) {
-        	std::cout << "Boost write error: " << ec << std::endl;
-        }
-        else {
-        	std::cout << "Wrote " << returnedBytes << "/" << data_len << " bytes." << std::endl;
-        }
-        */
-        return data_len / d_veclen;
+        return noutput_items;
     }
-/*
-    int
-    tcp_sink_impl::work(int noutput_items,
-        gr_vector_const_void_star &input_items,
-        gr_vector_void_star &output_items)
-    {
-        const char *in = (const char *) input_items[0];
-    	size_t block_size = output_signature()->sizeof_stream_item (0);
-    	unsigned int noi = d_itemsize * noutput_items;
-
-        gr::thread::scoped_lock guard(d_writing_mut);
-        while (d_writing) {
-          d_writing_cond.wait(guard);
-        }
-
-        size_t data_len = std::min(size_t(BUF_SIZE), (size_t)noi);
-        data_len -= data_len % d_itemsize;
-        memcpy(d_buf.get(), in, data_len);
-
-        std::cout << "Writing " << noi << " bytes" << std::endl;
-
-        boost::asio::async_write(*tcpsocket, boost::asio::buffer(d_buf.get(), data_len),
-            boost::bind(&tcp_sink_impl::do_write, this,
-              boost::asio::placeholders::error,
-              boost::asio::placeholders::bytes_transferred));
-        d_writing++;
-
-        return data_len / d_itemsize;
-    }
-    */
   } /* namespace grnet */
 } /* namespace gr */
 
