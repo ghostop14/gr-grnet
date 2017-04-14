@@ -45,22 +45,29 @@ namespace gr {
       : gr::sync_block("tcp_source",
               gr::io_signature::make(0, 0, 0),
               gr::io_signature::make(1, 1, itemsize*vecLen)),
-    d_itemsize(itemsize), d_veclen(vecLen),
+    d_itemsize(itemsize), d_veclen(vecLen),d_port(port),
     d_acceptor(d_io_service)
     {
     	d_block_size = d_itemsize * d_veclen;
 
-        std::string s__port = (boost::format("%d") % port).str();
+    	connect(true);
+    }
+
+    void tcp_source_impl::connect(bool initialConnection) {
+        std::string s__port = (boost::format("%d") % d_port).str();
         std::string s__host = "0.0.0.0";
         boost::asio::ip::tcp::resolver resolver(d_io_service);
         boost::asio::ip::tcp::resolver::query query(s__host, s__port,
             boost::asio::ip::resolver_query_base::passive);
         d_endpoint = *resolver.resolve(query);
 
-        std::cout << "TCP Source waiting for connection on " << s__host << ":" << port << std::endl;
-        d_acceptor.open(d_endpoint.protocol());
-        d_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-        d_acceptor.bind(d_endpoint);
+        std::cout << "TCP Source waiting for connection on " << s__host << ":" << d_port << std::endl;
+        if (initialConnection) {
+			d_acceptor.open(d_endpoint.protocol());
+			d_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+			d_acceptor.bind(d_endpoint);
+        }
+
         d_acceptor.listen();
 
 		tcpsocket = new boost::asio::ip::tcp::socket(d_io_service);
@@ -69,7 +76,7 @@ namespace gr {
 
     	boost::asio::socket_base::keep_alive option(true);
     	tcpsocket->set_option(option);
-        std::cout << "TCP Source " << s__host << ":" << port << " connected." << std::endl;
+        std::cout << "TCP Source " << s__host << ":" << d_port << " connected." << std::endl;
     }
 
     /*
@@ -170,6 +177,28 @@ namespace gr {
         return localNumItems;
     }
 
+    void tcp_source_impl::checkForDisconnect() {
+    	// See https://sourceforge.net/p/asio/mailman/message/29070473/
+
+    	int bytesRead;
+
+    	char buff[1];
+        bytesRead = tcpsocket->receive(boost::asio::buffer(buff),tcpsocket->message_peek, ec);
+    	if ((boost::asio::error::eof == ec) ||(boost::asio::error::connection_reset == ec)) {
+    		  std::cout << "Disconnect detected on port " << d_port << "." << std::endl;
+    		  tcpsocket->close();
+    		  delete tcpsocket;
+    		  tcpsocket = NULL;
+
+    	      connect(false);
+  	    }
+    	else {
+    		if (ec) {
+    			std::cout << "Socket error " << ec << " detected." << std::endl;
+    		}
+    	}
+    }
+
     int
     tcp_source_impl::work(int noutput_items,
         gr_vector_const_void_star &input_items,
@@ -178,12 +207,17 @@ namespace gr {
         gr::thread::scoped_lock guard(d_mutex);
 
     	int bytesAvailable = netDataAvailable();
-    	// quick exit if nothing to do
-        if ((bytesAvailable == 0) && (localQueue.size() == 0))
-        	return 0;
 
-        char *out = (char *) output_items[0];
+        if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
+        	// check if we disconnected:
+        	checkForDisconnect();
+
+        	// quick exit if nothing to do
+       		return 0;
+        }
+
     	int bytesRead;
+        char *out = (char *) output_items[0];
     	int returnedItems;
     	int localNumItems;
         int i;

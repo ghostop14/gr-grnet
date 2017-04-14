@@ -36,6 +36,8 @@ namespace gr {
         size_t d_veclen;
         size_t d_block_size;
 
+        int d_port;
+
         boost::system::error_code ec;
 
         boost::asio::io_service d_io_service;
@@ -47,6 +49,9 @@ namespace gr {
         boost::asio::streambuf read_buffer;
 
         boost::mutex d_mutex;
+
+        void connect(bool initialConnection);
+        void checkForDisconnect();
 
      public:
       tcp_source_impl(size_t itemsize,size_t vecLen, int port);
