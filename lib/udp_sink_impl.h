@@ -41,7 +41,7 @@ namespace gr {
         int d_header_size;
         unsigned int d_seq_num;
 
-        char tmpHeaderBuff[8];  // 32-bit sequence num and 32-bit data size
+        char tmpHeaderBuff[12];  // 32-bit sync word (0xFFFFFFFF), 32-bit sequence num and 32-bit data size
 
         boost::system::error_code ec;
 

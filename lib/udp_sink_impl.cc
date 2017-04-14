@@ -53,11 +53,11 @@ namespace gr {
     	break;
 
     	case HEADERTYPE_SEQNUM:
-    		d_header_size = 4;
+    		d_header_size = 8;
     	break;
     	case HEADERTYPE_SEQPLUSSIZE:
     	case HEADERTYPE_SEQSIZECRC:
-    		d_header_size = 8;
+    		d_header_size = 12;
     	break;
     	}
 
@@ -108,10 +108,12 @@ namespace gr {
 
         	d_seq_num++;
         	// want to send the header.
-            memcpy((void *)tmpHeaderBuff, (void *)&d_seq_num, sizeof(d_seq_num));
+        	tmpHeaderBuff[0]=tmpHeaderBuff[1]=tmpHeaderBuff[2]=tmpHeaderBuff[3]=0xFF;
+
+            memcpy((void *)&tmpHeaderBuff[4], (void *)&d_seq_num, sizeof(d_seq_num));
 
             if (d_header_type == HEADERTYPE_SEQPLUSSIZE) {
-                memcpy((void *)&tmpHeaderBuff[3], (void *)&noi, sizeof(noi));
+                memcpy((void *)&tmpHeaderBuff[8], (void *)&noi, sizeof(noi));
             }
             udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size),d_endpoint);
         }
@@ -146,6 +148,7 @@ namespace gr {
 
         	d_seq_num++;
         	// want to send the header.
+
             memcpy((void *)tmpHeaderBuff, (void *)&d_seq_num, sizeof(d_seq_num));
 
             if (d_header_type == HEADERTYPE_SEQPLUSSIZE) {
