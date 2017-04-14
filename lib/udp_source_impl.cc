@@ -110,8 +110,8 @@ namespace gr {
     	int bytesAvailable = netDataAvailable();
 
     	// quick exit if nothing to do
-//        if ((bytesAvailable == 0) && (localQueue.size() == 0))
-//        	return 0;
+        if ((bytesAvailable == 0) && (localQueue.size() == 0))
+        	return 0;
 
         char *out = (char *) output_items[0];
     	int bytesRead;
@@ -123,22 +123,47 @@ namespace gr {
     	// we could get here even if no data was received but there's still data in the queue.
     	// however read blocks so we want to make sure we have data before we call it.
     	if (bytesAvailable > 0) {
-            boost::asio::streambuf::mutable_buffers_type buf = read_buffer.prepare(numRequested);
+    		int bytesToGet;
+    		if (bytesAvailable > numRequested)
+    			bytesToGet=numRequested;
+    		else
+    			bytesToGet=bytesAvailable;
+
+            boost::asio::streambuf::mutable_buffers_type buf = read_buffer.prepare(bytesToGet);
         	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
             bytesRead = udpsocket->receive_from(buf,d_endpoint);
-            read_buffer.commit(bytesRead);
 
-            // Get the data and add it to our local queue.  We have to maintain a local queue
-            // in case we read more bytes than noutput_items is asking for.  In that case
-            // we'll only return noutput_items bytes
-            const char *readData = boost::asio::buffer_cast<const char*>( read_buffer.data());
+            if (bytesRead > 0) {
+                read_buffer.commit(bytesRead);
 
-            for (i=0;i<bytesRead;i++) {
-            	localQueue.push(readData[i]);
+                // Get the data and add it to our local queue.  We have to maintain a local queue
+                // in case we read more bytes than noutput_items is asking for.  In that case
+                // we'll only return noutput_items bytes
+                const char *readData = boost::asio::buffer_cast<const char*>( read_buffer.data());
+
+                int blocksRead=bytesRead / d_block_size;
+                int remainder = bytesRead % d_block_size;
+
+                if ((localQueue.size()==0) && (remainder==0)) {
+                	// If we don't have any data in the current queue,
+                	// and in=out, we'll just move the data and exit.  It's faster.
+                	unsigned int qnoi = blocksRead * d_block_size;
+                	for (i=0;i<qnoi;i++) {
+                		out[i]=readData[i];
+                	}
+
+                	read_buffer.consume(bytesRead);
+
+                	return blocksRead;
+                }
+                else {
+                    for (i=0;i<bytesRead;i++) {
+                    	localQueue.push(readData[i]);
+                    }
+                	read_buffer.consume(bytesRead);
+                }
             }
     	}
-
-    	read_buffer.consume(bytesRead);
 
     	// let's figure out how much we have in relation to noutput_items
         localNumItems = localQueue.size() / d_block_size;
@@ -170,8 +195,8 @@ namespace gr {
     	int bytesAvailable = netDataAvailable();
 
     	// quick exit if nothing to do
-//        if ((bytesAvailable == 0) && (localQueue.size() == 0))
-//        	return 0;
+        if ((bytesAvailable == 0) && (localQueue.size() == 0))
+        	return 0;
 
         char *out = (char *) output_items[0];
     	int bytesRead;
@@ -183,20 +208,46 @@ namespace gr {
     	// we could get here even if no data was received but there's still data in the queue.
     	// however read blocks so we want to make sure we have data before we call it.
     	if (bytesAvailable > 0) {
-            boost::asio::streambuf::mutable_buffers_type buf = read_buffer.prepare(numRequested);
+    		int bytesToGet;
+    		if (bytesAvailable > numRequested)
+    			bytesToGet=numRequested;
+    		else
+    			bytesToGet=bytesAvailable;
+
+            boost::asio::streambuf::mutable_buffers_type buf = read_buffer.prepare(bytesToGet);
         	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
             bytesRead = udpsocket->receive_from(buf,d_endpoint);
-            read_buffer.commit(bytesRead);
 
-            // Get the data and add it to our local queue.  We have to maintain a local queue
-            // in case we read more bytes than noutput_items is asking for.  In that case
-            // we'll only return noutput_items bytes
-            const char *readData = boost::asio::buffer_cast<const char*>( read_buffer.data());
+            if (bytesRead > 0) {
+                read_buffer.commit(bytesRead);
 
-            for (i=0;i<bytesRead;i++) {
-            	localQueue.push(readData[i]);
+                // Get the data and add it to our local queue.  We have to maintain a local queue
+                // in case we read more bytes than noutput_items is asking for.  In that case
+                // we'll only return noutput_items bytes
+                const char *readData = boost::asio::buffer_cast<const char*>( read_buffer.data());
+
+                int blocksRead=bytesRead / d_block_size;
+                int remainder = bytesRead % d_block_size;
+
+                if ((localQueue.size()==0) && (remainder==0)) {
+                	// If we don't have any data in the current queue,
+                	// and in=out, we'll just move the data and exit.  It's faster.
+                	unsigned int qnoi = blocksRead * d_block_size;
+                	for (i=0;i<qnoi;i++) {
+                		out[i]=readData[i];
+                	}
+
+                	read_buffer.consume(bytesRead);
+
+                	return blocksRead;
+                }
+                else {
+                    for (i=0;i<bytesRead;i++) {
+                    	localQueue.push(readData[i]);
+                    }
+                	read_buffer.consume(bytesRead);
+                }
             }
-        	read_buffer.consume(bytesRead);
     	}
 
     	// let's figure out how much we have in relation to noutput_items

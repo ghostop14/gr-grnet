@@ -50,8 +50,8 @@
 		<type>int</type>
 	</param>
 	<param>
-		<name>Header</name>
-		<key>header/CRC</key>
+		<name>Header/CRC</name>
+		<key>header</key>
 		<type>enum</type>
 		<option>
 			<name>None</name>

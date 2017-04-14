@@ -34,6 +34,7 @@ namespace gr {
         size_t d_itemsize;
         size_t d_veclen;
         size_t d_block_size;
+        int d_sinkmode;
 
         boost::system::error_code ec;
 
@@ -41,11 +42,18 @@ namespace gr {
         boost::asio::ip::tcp::endpoint d_endpoint;
         // std::set<boost::asio::ip::tcp::socket *> tcpsocket;
         boost::asio::ip::tcp::socket *tcpsocket;
+        boost::asio::ip::tcp::acceptor d_acceptor;
 
         boost::mutex d_mutex;
 
+        std::string strHost;
+        int d_port;
+
+        void checkForDisconnect();
+        void connect(bool initialConnection);
+
      public:
-      tcp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,bool noblock=true);
+      tcp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,int sinkMode=TCPSINKMODE_CLIENT);
       ~tcp_sink_impl();
 
       bool stop();

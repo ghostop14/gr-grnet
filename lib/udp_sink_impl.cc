@@ -41,8 +41,8 @@ namespace gr {
      */
     udp_sink_impl::udp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType)
       : gr::sync_block("udp_sink",
-              gr::io_signature::make(0, 0, 0),
-              gr::io_signature::make(1, 1, itemsize*vecLen)),
+              gr::io_signature::make(1, 1, itemsize*vecLen),
+              gr::io_signature::make(0, 0, 0)),
     d_itemsize(itemsize), d_veclen(vecLen),d_header_type(headerType),d_seq_num(0),d_header_size(0)
     {
     	d_block_size = d_itemsize * d_veclen;

@@ -30,16 +30,16 @@ ldconfig
 
 ## Performance
 Throughput is always important.  Each was measured against a local 127.0.0.1 listener on port 2000.  The following metrics were generated (the module installs a test-netsink command-line tool that can be used to test your own performance.  
-(Commas were added to the Bps output for clarity)
+(Commas were added to the Bps output for clarity).  The results indicate that the blocks can sustain network traffic at full gigabit network throughput if necessary.
 
 TCP Sink
 
 Testing netsink.  Sending test data to 127.0.0.1:2000
 
-Code Run Time:      0.000003 s  (2,722,399,488.000000 Bps)
+Code Run Time:      0.000002 s  (4,093,850,624.000000 Bps)
 
 
-TCP Source  (Note that receive appears to be slower than send)
+TCP Source
 
 TCP Source waiting for connection on 0.0.0.0:2000
 
@@ -49,7 +49,7 @@ Connected.  Waiting for data...
 
 Data received.  Processing...
 
-Code Run Time:      0.000072 s  (113,304,168.000000 Bps)
+Code Run Time:      0.000002 s  (3,957,239,296.000000 Bps)
 
 
 
@@ -57,7 +57,7 @@ UDP Sink
 
 Testing netsink.  Sending test data to 127.0.0.1:2000
 
-Code Run Time:      0.000004 s  (2,208,723,200.000000 Bps)
+Code Run Time:      0.000002 s  (3,734,619,648.000000 Bps)
 
 
 UDP Source
@@ -68,7 +68,7 @@ Connected.  Waiting for data...
 
 Data received.  Processing 8192 bytes
 
-Code Run Time:      0.000087 s  (93,658,176.000000 Bps)
+Code Run Time:      0.000002 s  (3,734,619,648.000000 Bps)
 
 
 ## Notes

@@ -4,7 +4,7 @@
   <key>grnet_tcp_sink</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
-  <make>grnet.tcp_sink($type.size, $vlen, $addr, $port)</make>
+  <make>grnet.tcp_sink($type.size, $vlen, $addr, $port,$mode)</make>
 	<param>
 		<name>Input Type</name>
 		<key>type</key>
@@ -37,10 +37,26 @@
 	</param>
 
 	<param>
+		<name>Mode</name>
+		<key>mode</key>
+		<type>enum</type>
+		<option>
+			<name>Client</name>
+			<key>1</key>
+			<opt>hide_specific:</opt>
+		</option>
+		<option>
+			<name>Server</name>
+			<key>2</key>
+			<opt>hide_specific:all</opt>
+		</option>
+	</param>
+	<param>
 		<name>Address</name>
 		<key>addr</key>
 		<value>127.0.0.1</value>
 		<type>string</type>
+		<hide>$mode.hide_specific</hide>
 	</param>
 
 	<param>

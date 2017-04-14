@@ -117,66 +117,6 @@ namespace gr {
     	return bytes_readable;
     }
 
-    int
-    tcp_source_impl::work_test(int noutput_items,
-        gr_vector_const_void_star &input_items,
-        gr_vector_void_star &output_items)
-    {
-        gr::thread::scoped_lock guard(d_mutex);
-
-    	int bytesAvailable = netDataAvailable();
-
-    	// quick exit if nothing to do
-        if ((bytesAvailable == 0) && (localQueue.size() == 0))
-        	return 0;
-
-        char *out = (char *) output_items[0];
-    	int bytesRead;
-    	int returnedItems;
-    	int localNumItems;
-        int i;
-
-    	// we could get here even if no data was received but there's still data in the queue.
-    	// however read blocks so we want to make sure we have data before we call it.
-    	if (bytesAvailable > 0) {
-        	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
-            bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesAvailable), ec);
-            read_buffer.commit(bytesRead);
-
-            // Get the data and add it to our local queue.  We have to maintain a local queue
-            // in case we read more bytes than noutput_items is asking for.  In that case
-            // we'll only return noutput_items bytes
-            const char *readData = boost::asio::buffer_cast<const char*>( read_buffer.data());
-
-            for (i=0;i<bytesRead;i++) {
-            	localQueue.push(readData[i]);
-            }
-        	read_buffer.consume(bytesRead);
-    	}
-
-    	// let's figure out how much we have in relation to noutput_items
-        localNumItems = localQueue.size() / d_block_size;
-
-        // This takes care of if we have more data than is being requested
-        if (localNumItems >= noutput_items) {
-        	localNumItems = noutput_items;
-        }
-
-        // Now convert our block back to bytes
-    	unsigned int noi = localNumItems * d_block_size;  // block size is sizeof(item) * vlen
-    	unsigned int numRequested = noutput_items * d_block_size;
-
-    	for (i=0;i<noi;i++) {
-    		out[i]=localQueue.front();
-    		localQueue.pop();
-    	}
-
-    	// std::cout << "Queue Size: " << localQueue.size() << std::endl;
-
-    	// If we had less data than requested, it'll be reflected in the return value.
-        return localNumItems;
-    }
-
     void tcp_source_impl::checkForDisconnect() {
     	// See https://sourceforge.net/p/asio/mailman/message/29070473/
 
@@ -190,6 +130,10 @@ namespace gr {
     		  delete tcpsocket;
     		  tcpsocket = NULL;
 
+    		  // clear any queue items
+    		  std::queue<char> empty;
+    		  std::swap(localQueue, empty );
+
     	      connect(false);
   	    }
     	else {
@@ -197,6 +141,108 @@ namespace gr {
     			std::cout << "Socket error " << ec << " detected." << std::endl;
     		}
     	}
+    }
+
+    int
+    tcp_source_impl::work_test(int noutput_items,
+        gr_vector_const_void_star &input_items,
+        gr_vector_void_star &output_items)
+    {
+        gr::thread::scoped_lock guard(d_mutex);
+
+    	int bytesAvailable = netDataAvailable();
+
+        if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
+        	// check if we disconnected:
+        	checkForDisconnect();
+
+        	// quick exit if nothing to do
+       		return 0;
+        }
+
+    	int bytesRead;
+        char *out = (char *) output_items[0];
+    	int returnedItems;
+    	int localNumItems;
+        int i;
+    	unsigned int numRequested = noutput_items * d_block_size;
+
+    	// we could get here even if no data was received but there's still data in the queue.
+    	// however read blocks so we want to make sure we have data before we call it.
+    	if (bytesAvailable > 0) {
+    		int bytesToGet;
+    		if (bytesAvailable > numRequested)
+    			bytesToGet=numRequested;
+    		else
+    			bytesToGet=bytesAvailable;
+
+        	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
+            // bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesAvailable), ec);
+            bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesToGet), ec);
+
+            if (ec) {
+            	std::cout << "Boost TCP socket error " << ec << std::endl;
+            }
+
+            if (bytesRead > 0) {
+                read_buffer.commit(bytesRead);
+
+                // Get the data and add it to our local queue.  We have to maintain a local queue
+                // in case we read more bytes than noutput_items is asking for.  In that case
+                // we'll only return noutput_items bytes
+                const char *readData = boost::asio::buffer_cast<const char*>(read_buffer.data());
+
+                int blocksRead=bytesRead / d_block_size;
+                int remainder = bytesRead % d_block_size;
+
+                if ((localQueue.size()==0) && (remainder==0)) {
+                	// If we don't have any data in the current queue,
+                	// and in=out, we'll just move the data and exit.  It's faster.
+                	unsigned int qnoi = blocksRead * d_block_size;
+                	for (i=0;i<qnoi;i++) {
+                		out[i]=readData[i];
+                	}
+
+                	read_buffer.consume(bytesRead);
+
+                	return blocksRead;
+                }
+                else {
+                    // we may have had carry-forward data so we have to locally queue it
+                    // to avoid losing fragments.
+                    if (localQueue.size() < MAXQUEUESIZE) {
+                        for (i=0;i<bytesRead;i++) {
+                        	localQueue.push(readData[i]);
+                        }
+                    }
+                    else {
+                    	std::cout << "Net Overrun.  Current Queue Size: " << localQueue.size() << ". Data to add: " << bytesRead << std::endl;
+                    }
+
+                	read_buffer.consume(bytesRead);
+                }
+
+            }
+    	}
+
+    	// let's figure out how much we have in relation to noutput_items
+        localNumItems = localQueue.size() / d_block_size;
+
+        // This takes care of if we have more data than is being requested
+        if (localNumItems >= noutput_items) {
+        	localNumItems = noutput_items;
+        }
+
+        // Now convert our block back to bytes
+    	unsigned int noi = localNumItems * d_block_size;  // block size is sizeof(item) * vlen
+
+    	for (i=0;i<noi;i++) {
+    		out[i]=localQueue.front();
+    		localQueue.pop();
+    	}
+
+    	// If we had less data than requested, it'll be reflected in the return value.
+        return localNumItems;
     }
 
     int
@@ -222,30 +268,63 @@ namespace gr {
     	int localNumItems;
         int i;
     	unsigned int numRequested = noutput_items * d_block_size;
-/*
-        std::cout << "Net Data Received: " << bytesAvailable;
-        std::cout << ", Queue size: " << localQueue.size();
-        std::cout << ", Bytes requested: " << numRequested << std::endl;
-*/
 
     	// we could get here even if no data was received but there's still data in the queue.
     	// however read blocks so we want to make sure we have data before we call it.
     	if (bytesAvailable > 0) {
+    		int bytesToGet;
+    		if (bytesAvailable > numRequested)
+    			bytesToGet=numRequested;
+    		else
+    			bytesToGet=bytesAvailable;
+
         	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
-            bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesAvailable), ec);
-            read_buffer.commit(bytesRead);
+            // bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesAvailable), ec);
+            bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesToGet), ec);
 
-            // Get the data and add it to our local queue.  We have to maintain a local queue
-            // in case we read more bytes than noutput_items is asking for.  In that case
-            // we'll only return noutput_items bytes
-            const char *readData = boost::asio::buffer_cast<const char*>(read_buffer.data());
-
-            // we may have had carry-forward data so we have to locally queue it
-            // to avoid losing data.  This queue also acts as a buffer.
-            for (i=0;i<bytesRead;i++) {
-            	localQueue.push(readData[i]);
+            if (ec) {
+            	std::cout << "Boost TCP socket error " << ec << std::endl;
             }
-        	read_buffer.consume(bytesRead);
+
+            if (bytesRead > 0) {
+                read_buffer.commit(bytesRead);
+
+                // Get the data and add it to our local queue.  We have to maintain a local queue
+                // in case we read more bytes than noutput_items is asking for.  In that case
+                // we'll only return noutput_items bytes
+                const char *readData = boost::asio::buffer_cast<const char*>(read_buffer.data());
+
+                int blocksRead=bytesRead / d_block_size;
+                int remainder = bytesRead % d_block_size;
+
+                if ((localQueue.size()==0) && (remainder==0)) {
+                	// If we don't have any data in the current queue,
+                	// and in=out, we'll just move the data and exit.  It's faster.
+                	unsigned int qnoi = blocksRead * d_block_size;
+                	for (i=0;i<qnoi;i++) {
+                		out[i]=readData[i];
+                	}
+
+                	read_buffer.consume(bytesRead);
+
+                	return blocksRead;
+                }
+                else {
+                    // we may have had carry-forward data so we have to locally queue it
+                    // to avoid losing fragments.
+                    if (localQueue.size() < MAXQUEUESIZE) {
+                        for (i=0;i<bytesRead;i++) {
+                        	localQueue.push(readData[i]);
+                        }
+                    }
+                    else {
+                    	std::cout << "Net Overrun.  Current Queue Size: " << localQueue.size() << ". Data to add: " << bytesRead << std::endl;
+                    }
+
+                	read_buffer.consume(bytesRead);
+                }
+
+            }
     	}
 
     	// let's figure out how much we have in relation to noutput_items
@@ -263,27 +342,7 @@ namespace gr {
     		out[i]=localQueue.front();
     		localQueue.pop();
     	}
-/*
-    	gr_complex *complexout = (gr_complex *)output_items[0];
 
-    	for (i=0;i<6;i++) {
-    			std::cout << "real=" << complexout[i].real() << ", imag=" << complexout[i].imag() << std::endl;
-    	}
-*/
-
-/*
-    	if (localQueue.size() > MAXQUEUESIZE) {
-    		std::cout << "nO";
-    	}
-    	else {
-    		if (noutput_items > localNumItems) {
-        		std::cout << "nU";
-    		}
-    		else {
-    			std::cout << ".";
-    		}
-    	}
-*/
     	// If we had less data than requested, it'll be reflected in the return value.
         return localNumItems;
     }

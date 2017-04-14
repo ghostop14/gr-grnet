@@ -25,6 +25,9 @@
 #include <grnet/api.h>
 #include <gnuradio/sync_block.h>
 
+#define TCPSINKMODE_CLIENT 1
+#define TCPSINKMODE_SERVER 2
+
 namespace gr {
   namespace grnet {
 
@@ -46,7 +49,7 @@ namespace gr {
        * class. grnet::tcp_sink::make is the public interface for
        * creating new instances.
        */
-      static sptr make(size_t itemsize,size_t vecLen, const std::string &host, int port,bool noblock=true);
+      static sptr make(size_t itemsize,size_t vecLen, const std::string &host, int port,int sinkMode);
     };
 
   } // namespace grnet
