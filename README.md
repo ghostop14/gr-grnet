@@ -5,11 +5,11 @@ Header/CRC
 
 None (raw byte stream)
 
-leading 32-bit sequence number
+0xFFFFFFFF sync + leading 32-bit sequence number
 
-leading 32-bit sequence number and 32-bit data size
+sync + leading 32-bit sequence number + 32-bit data size
 
-leading sequence # and data size + trailing crc32
+sync + leading 32-bit sequence number + 32-bit data size + trailing crc32
 
 
 
