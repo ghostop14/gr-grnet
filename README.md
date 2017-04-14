@@ -1,7 +1,4 @@
 # gr-grnet
-
-(Note: This module is in active development.  The sinks work very well, the sources are still being worked out with more features to come)
-
 GNURadio TCP and UDP source and sink blocks completely rewritten in C++ with Boost.  The UDP block has some additional header/crc options that can be optionally enabled as well:
 
 Header/CRC
