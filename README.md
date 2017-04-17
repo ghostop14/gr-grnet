@@ -14,6 +14,9 @@ sync + leading 32-bit sequence number + 32-bit data size + trailing crc32
 
 
 ## Building
+This module requires zlib for the crc32 calculations in the UDP module.  You can install it with 'apt-get install zlib1g-dev' if it's not already present.
+
+
 Build is pretty standard:
 
 mkdir build
