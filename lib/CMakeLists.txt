@@ -103,7 +103,7 @@ target_link_libraries(
   gnuradio-grnet
 )
 
-install(TARGETS test-netsink DESTINATION /usr/bin RUNTIME)
+install(TARGETS test-netsink DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" RUNTIME)
 
 ########################################################################
 # Build test-netsource
@@ -127,7 +127,7 @@ target_link_libraries(
   gnuradio-grnet
 )
 
-install(TARGETS test-netsource DESTINATION /usr/bin RUNTIME)
+install(TARGETS test-netsource DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" RUNTIME)
 
 ########################################################################
 # Print summary
