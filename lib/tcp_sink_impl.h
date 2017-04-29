@@ -25,6 +25,8 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
+// using namespace boost::asio::ip::tcp;
+
 namespace gr {
   namespace grnet {
 
@@ -42,12 +44,14 @@ namespace gr {
         boost::asio::ip::tcp::endpoint d_endpoint;
         // std::set<boost::asio::ip::tcp::socket *> tcpsocket;
         boost::asio::ip::tcp::socket *tcpsocket;
-        boost::asio::ip::tcp::acceptor d_acceptor;
+        boost::asio::ip::tcp::acceptor *d_acceptor=NULL;
 
         boost::mutex d_mutex;
 
         std::string strHost;
         int d_port;
+
+        bool bConnected;
 
         void checkForDisconnect();
         void connect(bool initialConnection);
@@ -57,6 +61,9 @@ namespace gr {
       ~tcp_sink_impl();
 
       bool stop();
+
+      void accept_handler(boost::asio::ip::tcp::socket * new_connection,
+    	      const boost::system::error_code& error);
 
       // Where all the action really happens
       int work_test(int noutput_items,

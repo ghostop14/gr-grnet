@@ -74,6 +74,8 @@ namespace gr {
         // This will block while waiting for a connection
         d_acceptor.accept(*tcpsocket, d_endpoint);
 
+        bConnected = true;
+
     	boost::asio::socket_base::keep_alive option(true);
     	tcpsocket->set_option(option);
         std::cout << "TCP Source " << s__host << ":" << d_port << " connected." << std::endl;

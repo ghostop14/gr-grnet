@@ -50,6 +50,8 @@ namespace gr {
 
         boost::mutex d_mutex;
 
+        bool bConnected;
+
         void connect(bool initialConnection);
         void checkForDisconnect();
 
