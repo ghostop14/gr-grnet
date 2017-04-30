@@ -116,6 +116,9 @@ namespace gr {
 			*/
 	        d_acceptor = new boost::asio::ip::tcp::acceptor(d_io_service,boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(),d_port));
         }
+        else {
+			d_io_service.reset();
+        }
 
         // d_acceptor.listen();
 
@@ -143,7 +146,6 @@ namespace gr {
 			d_io_service.run();
 		}
 		else {
-			d_io_service.reset();
 			d_io_service.run();
 		}
     }
@@ -159,12 +161,12 @@ namespace gr {
     bool tcp_sink_impl::stop() {
         if (tcpsocket) {
 			tcpsocket->close();
-
+			delete tcpsocket;
             tcpsocket = NULL;
-
-            d_io_service.reset();
-            d_io_service.stop();
         }
+
+        d_io_service.reset();
+        d_io_service.stop();
 
         if (d_acceptor) {
         	delete d_acceptor;

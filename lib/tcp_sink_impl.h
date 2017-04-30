@@ -43,7 +43,7 @@ namespace gr {
         boost::asio::io_service d_io_service;
         boost::asio::ip::tcp::endpoint d_endpoint;
         // std::set<boost::asio::ip::tcp::socket *> tcpsocket;
-        boost::asio::ip::tcp::socket *tcpsocket;
+        boost::asio::ip::tcp::socket *tcpsocket=NULL;
         boost::asio::ip::tcp::acceptor *d_acceptor=NULL;
 
         boost::mutex d_mutex;

@@ -42,15 +42,15 @@ namespace gr {
 
         boost::asio::io_service d_io_service;
         boost::asio::ip::tcp::endpoint d_endpoint;
-        boost::asio::ip::tcp::socket *tcpsocket;
-        boost::asio::ip::tcp::acceptor d_acceptor;
+        boost::asio::ip::tcp::socket *tcpsocket=NULL;
+        boost::asio::ip::tcp::acceptor *d_acceptor=NULL;
+
+        bool bConnected;
 
     	std::queue<char> localQueue;
         boost::asio::streambuf read_buffer;
 
         boost::mutex d_mutex;
-
-        bool bConnected;
 
         void connect(bool initialConnection);
         void checkForDisconnect();
@@ -60,6 +60,9 @@ namespace gr {
       ~tcp_source_impl();
 
       bool stop();
+
+      void accept_handler(boost::asio::ip::tcp::socket * new_connection,
+    	      const boost::system::error_code& error);
 
       size_t dataAvailable();
       size_t netDataAvailable();

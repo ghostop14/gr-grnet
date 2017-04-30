@@ -45,8 +45,7 @@ namespace gr {
       : gr::sync_block("tcp_source",
               gr::io_signature::make(0, 0, 0),
               gr::io_signature::make(1, 1, itemsize*vecLen)),
-    d_itemsize(itemsize), d_veclen(vecLen),d_port(port),
-    d_acceptor(d_io_service)
+    d_itemsize(itemsize), d_veclen(vecLen),d_port(port)//,    d_acceptor(d_io_service)
     {
     	d_block_size = d_itemsize * d_veclen;
 
@@ -54,31 +53,73 @@ namespace gr {
     }
 
     void tcp_source_impl::connect(bool initialConnection) {
-        std::string s__port = (boost::format("%d") % d_port).str();
-        std::string s__host = "0.0.0.0";
-        boost::asio::ip::tcp::resolver resolver(d_io_service);
-        boost::asio::ip::tcp::resolver::query query(s__host, s__port,
-            boost::asio::ip::resolver_query_base::passive);
-        d_endpoint = *resolver.resolve(query);
-
-        std::cout << "TCP Source waiting for connection on " << s__host << ":" << d_port << std::endl;
+        std::cout << "TCP Source waiting for connection on port " << d_port << std::endl;
         if (initialConnection) {
+        	/*
 			d_acceptor.open(d_endpoint.protocol());
 			d_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 			d_acceptor.bind(d_endpoint);
+			*/
+	        d_acceptor = new boost::asio::ip::tcp::acceptor(d_io_service,boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(),d_port));
+        }
+        else {
+			d_io_service.reset();
         }
 
-        d_acceptor.listen();
+        // d_acceptor.listen();
 
-		tcpsocket = new boost::asio::ip::tcp::socket(d_io_service);
+        // switched to match boost example code with a copy/temp pointer
+        if (tcpsocket) {
+        	delete tcpsocket;
+        }
+		tcpsocket = NULL; // new boost::asio::ip::tcp::socket(d_io_service);
         // This will block while waiting for a connection
-        d_acceptor.accept(*tcpsocket, d_endpoint);
+        // d_acceptor.accept(*tcpsocket, d_endpoint);
+		bConnected = false;
 
-        bConnected = true;
 
-    	boost::asio::socket_base::keep_alive option(true);
-    	tcpsocket->set_option(option);
-        std::cout << "TCP Source " << s__host << ":" << d_port << " connected." << std::endl;
+		// Good full example:
+		// http://www.boost.org/doc/libs/1_36_0/doc/html/boost_asio/example/echo/async_tcp_echo_server.cpp
+		// Boost tutorial
+		// http://www.boost.org/doc/libs/1_63_0/doc/html/boost_asio/tutorial.html
+
+		boost::asio::ip::tcp::socket *tmpSocket = new boost::asio::ip::tcp::socket(d_io_service);
+		d_acceptor->async_accept(*tmpSocket,
+				boost::bind(&tcp_source_impl::accept_handler, this, tmpSocket, // This will make a ptr copy // boost::ref(tcpsocket),  // << pass by reference
+				          boost::asio::placeholders::error));
+
+		if (initialConnection) {
+			d_io_service.run();
+		}
+		else {
+			d_io_service.run();
+		}
+    }
+
+    void tcp_source_impl::accept_handler(boost::asio::ip::tcp::socket * new_connection,
+  	      const boost::system::error_code& error)
+    {
+      if (!error)
+      {
+          std::cout << "TCP Source Connection established." << std::endl;
+        // Accept succeeded.
+        tcpsocket = new_connection;
+
+      	boost::asio::socket_base::keep_alive option(true);
+      	tcpsocket->set_option(option);
+      	bConnected = true;
+
+      }
+      else {
+    	  std::cout << "Error code " << error << " accepting boost TCP session." << std::endl;
+
+    	  // Boost made a copy so we have to clean up
+    	  delete new_connection;
+
+    	  // safety settings.
+    	  bConnected = false;
+    	  tcpsocket = NULL;
+      }
     }
 
     /*
@@ -91,14 +132,19 @@ namespace gr {
 
     bool tcp_source_impl::stop() {
         if (tcpsocket) {
-			tcpsocket->close();
+ 			tcpsocket->close();
+ 			delete tcpsocket;
+             tcpsocket = NULL;
+         }
 
-            tcpsocket = NULL;
+         d_io_service.reset();
+         d_io_service.stop();
 
-            d_io_service.reset();
-            d_io_service.stop();
-        }
-        return true;
+         if (d_acceptor) {
+         	delete d_acceptor;
+         	d_acceptor=NULL;
+         }
+         return true;
     }
 
     size_t tcp_source_impl::dataAvailable() {
@@ -254,6 +300,9 @@ namespace gr {
     {
         gr::thread::scoped_lock guard(d_mutex);
 
+    	if (!bConnected)
+    		return 0;
+
     	int bytesAvailable = netDataAvailable();
 
         if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
@@ -286,6 +335,7 @@ namespace gr {
 
             if (ec) {
             	std::cout << "Boost TCP socket error " << ec << std::endl;
+            	return 0;
             }
 
             if (bytesRead > 0) {
