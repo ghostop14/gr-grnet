@@ -196,3 +196,15 @@ endif(NOT CMAKE_MODULES_DIR)
 install(FILES cmake/Modules/grnetConfig.cmake
     DESTINATION ${CMAKE_MODULES_DIR}/grnet
 )
+
+FIND_LIBRARY(
+    LIBZ_LIBRARY
+    NAMES z
+    PATHS /usr/local/lib
+          /usr/lib
+          /usr/lib64
+)
+
+if(NOT LIBZ_LIBRARY)
+	MESSAGE(FATAL_ERROR "Unable to find libz.  Please make sure libz1g-dev is installed.")
+endif()
