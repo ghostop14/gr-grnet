@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <block>
-  <name>UDP Source (grnet)</name>
-  <key>grnet_udp_source</key>
+  <name>TCP Source (grnet)</name>
+  <key>grnet_tcp_source</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
-  <make>grnet.udp_source($type.size, $vlen, $port)</make>
+  <make>grnet.tcp_source($type.size, $vlen, $port)</make>
 	<param>
 		<name>Input Type</name>
 		<key>type</key>
@@ -35,7 +35,6 @@
 			<opt>size:gr.sizeof_char</opt>
 		</option>
 	</param>
-
 	<param>
 		<name>Port</name>
 		<key>port</key>
