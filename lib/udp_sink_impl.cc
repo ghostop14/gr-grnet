@@ -99,35 +99,92 @@ namespace gr {
     {
         gr::thread::scoped_lock guard(d_mutex);
 
+        int maxDataSize=1472;
+        switch (d_header_type) {
+        	case HEADERTYPE_NONE:
+        		maxDataSize=1472;
+        	break;
+        	case HEADERTYPE_SEQNUM:
+        		maxDataSize = 1472 - 8;
+        	break;
+
+        	case HEADERTYPE_SEQPLUSSIZE:
+        		maxDataSize = 1472 - 12;
+        	break;
+
+        	case HEADERTYPE_SEQSIZECRC:
+        		maxDataSize = 1472 - 12 - sizeof(unsigned long);
+        	break;
+        }
+
         const char *in = (const char *) input_items[0];
     	unsigned int noi = noutput_items * d_block_size;
 
-        if (d_header_type != HEADERTYPE_NONE) {
-        	if (d_seq_num == 0xFFFFFFFF)
-        		d_seq_num = 0;
+    	// Calc our packet break-up
+    	float fNumPackets = (float)noi / (float)maxDataSize;
+    	int numPackets = noi / maxDataSize;
+    	if (fNumPackets > (float)numPackets)
+    		numPackets = numPackets + 1;
 
-        	d_seq_num++;
-        	// want to send the header.
-        	tmpHeaderBuff[0]=tmpHeaderBuff[1]=tmpHeaderBuff[2]=tmpHeaderBuff[3]=0xFF;
+    	// deal with a last packet < maxDataSize
+    	int lastPacketSize = noi - (noi / maxDataSize) * maxDataSize;
 
-            memcpy((void *)&tmpHeaderBuff[4], (void *)&d_seq_num, sizeof(d_seq_num));
+    	std::vector<boost::asio::const_buffer> transmitbuffer;
+    	int curPtr=0;
 
-            if (d_header_type == HEADERTYPE_SEQPLUSSIZE) {
-                memcpy((void *)&tmpHeaderBuff[8], (void *)&noi, sizeof(noi));
+    	for (int curPacket=0;curPacket < numPackets; curPacket++) {
+    		// Clear the next transmit buffer
+    		transmitbuffer.clear();
+
+    		// build our next header if we need it
+            if (d_header_type != HEADERTYPE_NONE) {
+            	if (d_seq_num == 0xFFFFFFFF)
+            		d_seq_num = 0;
+
+            	d_seq_num++;
+            	// want to send the header.
+            	tmpHeaderBuff[0]=tmpHeaderBuff[1]=tmpHeaderBuff[2]=tmpHeaderBuff[3]=0xFF;
+
+                memcpy((void *)&tmpHeaderBuff[4], (void *)&d_seq_num, sizeof(d_seq_num));
+
+                if ((d_header_type == HEADERTYPE_SEQPLUSSIZE)||(d_header_type == HEADERTYPE_SEQSIZECRC)) {
+                    if (curPacket < (numPackets-1))
+                        memcpy((void *)&tmpHeaderBuff[8], (void *)&maxDataSize, sizeof(maxDataSize));
+                    else
+                        memcpy((void *)&tmpHeaderBuff[8], (void *)&lastPacketSize, sizeof(lastPacketSize));
+                }
+
+                transmitbuffer.push_back(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size));
+
+                // udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size),d_endpoint);
             }
-            udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size),d_endpoint);
-        }
-        // send it.
-        // We could have done this async, however with guards and waits it has the same effect.
-        // It just doesn't get detected till the next frame.
-        udpsocket->send_to(boost::asio::buffer((const void *)in, noi),d_endpoint);
 
-        if (d_header_type == HEADERTYPE_SEQSIZECRC) {
-        	unsigned long  crc = crc32(0L, Z_NULL, 0);
-        	crc = crc32(crc, (const unsigned char*)in, noi);
-            memcpy((void *)tmpHeaderBuff, (void *)&crc, sizeof(crc));
-            udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, sizeof(crc)),d_endpoint);
-        }
+            // Grab our next data chunk
+            if (curPacket < (numPackets-1)) {
+            	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], maxDataSize));
+            }
+            else {
+            	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], lastPacketSize));
+            }
+            // Actual transmit is now further down
+            // udpsocket->send_to(boost::asio::buffer((const void *)in, noi),d_endpoint);
+
+            if (d_header_type == HEADERTYPE_SEQSIZECRC) {
+            	unsigned long  crc = crc32(0L, Z_NULL, 0);
+                if (curPacket < (numPackets-1))
+                	crc = crc32(crc, (const unsigned char*)&in[curPtr], maxDataSize);
+                else
+                	crc = crc32(crc, (const unsigned char*)&in[curPtr], lastPacketSize);
+
+                memcpy((void *)tmpHeaderBuff, (void *)&crc, sizeof(crc));
+                transmitbuffer.push_back(boost::asio::buffer((const void *)tmpHeaderBuff, sizeof(crc)));
+                // udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, sizeof(crc)),d_endpoint);
+            }
+
+            udpsocket->send_to(transmitbuffer,d_endpoint);
+
+            curPtr = curPtr + maxDataSize;
+    	}
 
         return noutput_items;
     }

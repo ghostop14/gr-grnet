@@ -9,7 +9,7 @@ None (raw byte stream)
 
 sync + leading 32-bit sequence number + 32-bit data size
 
-sync + leading 32-bit sequence number + 32-bit data size + trailing crc32
+sync + leading 32-bit sequence number + 32-bit data size + trailing crc32 (note this will be a 64-bit unsigned long)
 
 
 
