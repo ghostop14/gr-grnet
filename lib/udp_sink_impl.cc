@@ -30,21 +30,26 @@ namespace gr {
   namespace grnet {
 
     udp_sink::sptr
-    udp_sink::make(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType)
+    udp_sink::make(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType,int payloadsize)
     {
       return gnuradio::get_initial_sptr
-        (new udp_sink_impl(itemsize, vecLen,host, port,headerType));
+        (new udp_sink_impl(itemsize, vecLen,host, port,headerType,payloadsize));
     }
 
     /*
      * The private constructor
      */
-    udp_sink_impl::udp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType)
+    udp_sink_impl::udp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType,int payloadsize)
       : gr::sync_block("udp_sink",
               gr::io_signature::make(1, 1, itemsize*vecLen),
               gr::io_signature::make(0, 0, 0)),
-    d_itemsize(itemsize), d_veclen(vecLen),d_header_type(headerType),d_seq_num(0),d_header_size(0)
+    d_itemsize(itemsize), d_veclen(vecLen),d_header_type(headerType),d_seq_num(0),d_header_size(0),d_payloadsize(payloadsize)
     {
+    	if (d_payloadsize<8) {
+  		  std::cout << "Error: payload size is too small.  Must be at least 8 bytes" << std::endl;
+  	      exit(1);
+    	}
+
     	d_block_size = d_itemsize * d_veclen;
 
     	switch (d_header_type) {
@@ -99,21 +104,21 @@ namespace gr {
     {
         gr::thread::scoped_lock guard(d_mutex);
 
-        int maxDataSize=1472;
+        int maxDataSize=d_payloadsize;
         switch (d_header_type) {
         	case HEADERTYPE_NONE:
-        		maxDataSize=1472;
+        		maxDataSize=d_payloadsize;
         	break;
         	case HEADERTYPE_SEQNUM:
-        		maxDataSize = 1472 - 8;
+        		maxDataSize = d_payloadsize - 8;
         	break;
 
         	case HEADERTYPE_SEQPLUSSIZE:
-        		maxDataSize = 1472 - 12;
+        		maxDataSize = d_payloadsize - 12;
         	break;
 
         	case HEADERTYPE_SEQSIZECRC:
-        		maxDataSize = 1472 - 12 - sizeof(unsigned long);
+        		maxDataSize = d_payloadsize - 12 - sizeof(unsigned long);
         	break;
         }
 
@@ -196,21 +201,21 @@ namespace gr {
     {
         gr::thread::scoped_lock guard(d_mutex);
 
-        int maxDataSize=1472;
+        int maxDataSize=d_payloadsize;
         switch (d_header_type) {
         	case HEADERTYPE_NONE:
-        		maxDataSize=1472;
+        		maxDataSize=d_payloadsize;
         	break;
         	case HEADERTYPE_SEQNUM:
-        		maxDataSize = 1472 - 8;
+        		maxDataSize = d_payloadsize - 8;
         	break;
 
         	case HEADERTYPE_SEQPLUSSIZE:
-        		maxDataSize = 1472 - 12;
+        		maxDataSize = d_payloadsize - 12;
         	break;
 
         	case HEADERTYPE_SEQSIZECRC:
-        		maxDataSize = 1472 - 12 - sizeof(unsigned long);
+        		maxDataSize = d_payloadsize - 12 - sizeof(unsigned long);
         	break;
         }
 

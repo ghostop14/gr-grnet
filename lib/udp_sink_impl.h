@@ -39,6 +39,7 @@ namespace gr {
 
         int d_header_type;
         int d_header_size;
+        int d_payloadsize;
         unsigned int d_seq_num;
 
         char tmpHeaderBuff[12];  // 32-bit sync word (0xFFFFFFFF), 32-bit sequence num and 32-bit data size
@@ -52,7 +53,7 @@ namespace gr {
         boost::mutex d_mutex;
 
      public:
-      udp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType=HEADERTYPE_NONE);
+      udp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType=HEADERTYPE_NONE,int payloadsize=1472);
       ~udp_sink_impl();
 
       bool stop();

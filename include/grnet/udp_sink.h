@@ -47,7 +47,7 @@ namespace gr {
        * class. grnet::udp_sink::make is the public interface for
        * creating new instances.
        */
-      static sptr make(size_t itemsize,size_t vecLen, const std::string &host, int port,int headerType);
+      static sptr make(size_t itemsize,size_t vecLen, const std::string &host, int port,int headerType,int payloadsize);
     };
 
   } // namespace grnet

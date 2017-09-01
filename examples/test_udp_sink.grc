@@ -46,7 +46,7 @@
     </param>
     <param>
       <key>id</key>
-      <value>test_tcp_sink_client</value>
+      <value>test_udp_sink</value>
     </param>
     <param>
       <key>max_nouts</key>
@@ -163,7 +163,7 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(136, 268)</value>
+      <value>(144, 268)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -340,7 +340,7 @@
     </param>
   </block>
   <block>
-    <key>grnet_tcp_sink</key>
+    <key>grnet_udp_sink</key>
     <param>
       <key>addr</key>
       <value>127.0.0.1</value>
@@ -363,23 +363,27 @@
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(680, 284)</value>
+      <value>(688, 276)</value>
     </param>
     <param>
       <key>_rotation</key>
       <value>0</value>
     </param>
     <param>
+      <key>header</key>
+      <value>0</value>
+    </param>
+    <param>
       <key>id</key>
-      <value>grnet_tcp_sink_0</value>
+      <value>grnet_udp_sink_0</value>
     </param>
     <param>
       <key>type</key>
       <value>complex</value>
     </param>
     <param>
-      <key>mode</key>
-      <value>1</value>
+      <key>payloadsize</key>
+      <value>1472</value>
     </param>
     <param>
       <key>port</key>
@@ -709,7 +713,7 @@
   </connection>
   <connection>
     <source_block_id>blocks_throttle_0</source_block_id>
-    <sink_block_id>grnet_tcp_sink_0</sink_block_id>
+    <sink_block_id>grnet_udp_sink_0</sink_block_id>
     <source_key>0</source_key>
     <sink_key>0</sink_key>
   </connection>

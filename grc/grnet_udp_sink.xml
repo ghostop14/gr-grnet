@@ -4,7 +4,7 @@
   <key>grnet_udp_sink</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
-  <make>grnet.udp_sink($type.size, $vlen, $addr, $port,$header)</make>
+  <make>grnet.udp_sink($type.size, $vlen, $addr, $port,$header,$payloadsize)</make>
 	<param>
 		<name>Input Type</name>
 		<key>type</key>
@@ -46,7 +46,7 @@
 	<param>
 		<name>Port</name>
 		<key>port</key>
-		<value>0</value>
+		<value>2000</value>
 		<type>int</type>
 	</param>
 	<param>
@@ -76,10 +76,24 @@
 		<value>1</value>
 		<type>int</type>
 	</param>
+	<param>
+		<name>Payload Size</name>
+		<key>payloadsize</key>
+		<value>1472</value>
+		<type>int</type>
+	</param>
 	<check>$vlen &gt; 0</check>
 	<sink>
 		<name>in</name>
 		<type>$type</type>
 		<vlen>$vlen</vlen>
 	</sink>
+	<doc>
+This block provides basic UDP data transmission capabilities with a few additional features for processing in custom receiving applications.  
+A header can be added that provides 4 0xFF bytes to form a sync word along with a packet sequence number for detecting out-of-sequence 
+packets as well as a packet size.  A 64-bit CRC field based on zlib's crc32 function can also be added to the end of the packets for integrity checking.  
+Note that payload size impacts the overall size of a single UDP packet.  For a normal network, a payload size of 1472 (1500-28 for UDP headers) represents the max size for a standard UDP packet.  
+For a Jumbo frames 8972 can be used (9000-28).  Be careful adjusting this parameter as you could inadvertently cause unnecessary packet fragmentation and reconstruction.
+
+	</doc>
 </block>
