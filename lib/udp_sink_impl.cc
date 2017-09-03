@@ -25,28 +25,51 @@
 #include <gnuradio/io_signature.h>
 #include "udp_sink_impl.h"
 #include <zlib.h>
+#include <boost/array.hpp>
 
 namespace gr {
   namespace grnet {
 
     udp_sink::sptr
-    udp_sink::make(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType,int payloadsize)
+    udp_sink::make(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType,int payloadsize,bool send_eof)
     {
       return gnuradio::get_initial_sptr
-        (new udp_sink_impl(itemsize, vecLen,host, port,headerType,payloadsize));
+        (new udp_sink_impl(itemsize, vecLen,host, port,headerType,payloadsize,send_eof));
     }
 
     /*
      * The private constructor
      */
-    udp_sink_impl::udp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType,int payloadsize)
+    udp_sink_impl::udp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType,int payloadsize,bool send_eof)
       : gr::sync_block("udp_sink",
               gr::io_signature::make(1, 1, itemsize*vecLen),
               gr::io_signature::make(0, 0, 0)),
-    d_itemsize(itemsize), d_veclen(vecLen),d_header_type(headerType),d_seq_num(0),d_header_size(0),d_payloadsize(payloadsize)
+    d_itemsize(itemsize), d_veclen(vecLen),d_header_type(headerType),d_seq_num(0),d_header_size(0),d_payloadsize(payloadsize),b_send_eof(send_eof)
     {
+    	// Lets set up the max payload size for the UDP packet based on the requested payload size.
+    	// Some important notes:  For a standard IP/UDP packet, say crossing the Internet with a
+    	// standard MTU, 1472 is the max UDP payload size.  Larger values can be sent, however
+    	// the IP stack will fragment the packet.  This can cause additional network overhead
+    	// as the packet gets reassembled.
+    	// Now for local nets that support jumbo frames, the max payload size is 8972 (9000-the UDP 28-byte header)
+    	// Same rules apply with fragmentation.
+
+        switch (d_header_type) {
+        	case HEADERTYPE_SEQNUM:
+        		d_payloadsize = d_payloadsize - 8;  // take back our header
+        	break;
+
+        	case HEADERTYPE_SEQPLUSSIZE:
+        		d_payloadsize = d_payloadsize - 12; // take back our header
+        	break;
+
+        	case HEADERTYPE_SEQSIZECRC:
+        		d_payloadsize = d_payloadsize - 12 - sizeof(unsigned long); // Take back header and trailing crc
+        	break;
+        }
+
     	if (d_payloadsize<8) {
-  		  std::cout << "Error: payload size is too small.  Must be at least 8 bytes" << std::endl;
+  		  std::cout << "Error: payload size is too small.  Must be at least 8 bytes once header/trailer adjustments are made." << std::endl;
   	      exit(1);
     	}
 
@@ -87,8 +110,16 @@ namespace gr {
 
     bool udp_sink_impl::stop() {
         if (udpsocket) {
-        	udpsocket->close();
+            gr::thread::scoped_lock guard(d_mutex);
 
+        	if (b_send_eof) {
+				// Send a few zero-length packets to signal receiver we are done
+				boost::array<char, 0> send_buf;
+				for(int i = 0; i < 3; i++)
+				  udpsocket->send_to(boost::asio::buffer(send_buf), d_endpoint);
+        	}
+
+        	udpsocket->close();
         	udpsocket = NULL;
 
             d_io_service.reset();
@@ -104,35 +135,17 @@ namespace gr {
     {
         gr::thread::scoped_lock guard(d_mutex);
 
-        int maxDataSize=d_payloadsize;
-        switch (d_header_type) {
-        	case HEADERTYPE_NONE:
-        		maxDataSize=d_payloadsize;
-        	break;
-        	case HEADERTYPE_SEQNUM:
-        		maxDataSize = d_payloadsize - 8;
-        	break;
-
-        	case HEADERTYPE_SEQPLUSSIZE:
-        		maxDataSize = d_payloadsize - 12;
-        	break;
-
-        	case HEADERTYPE_SEQSIZECRC:
-        		maxDataSize = d_payloadsize - 12 - sizeof(unsigned long);
-        	break;
-        }
-
         const char *in = (const char *) input_items[0];
     	unsigned int noi = noutput_items * d_block_size;
 
     	// Calc our packet break-up
-    	float fNumPackets = (float)noi / (float)maxDataSize;
-    	int numPackets = noi / maxDataSize;
+    	float fNumPackets = (float)noi / (float)d_payloadsize;
+    	int numPackets = noi / d_payloadsize;
     	if (fNumPackets > (float)numPackets)
     		numPackets = numPackets + 1;
 
-    	// deal with a last packet < maxDataSize
-    	int lastPacketSize = noi - (noi / maxDataSize) * maxDataSize;
+    	// deal with a last packet < d_payloadsize
+    	int lastPacketSize = noi - (noi / d_payloadsize) * d_payloadsize;
 
     	std::vector<boost::asio::const_buffer> transmitbuffer;
     	int curPtr=0;
@@ -154,7 +167,7 @@ namespace gr {
 
                 if ((d_header_type == HEADERTYPE_SEQPLUSSIZE)||(d_header_type == HEADERTYPE_SEQSIZECRC)) {
                     if (curPacket < (numPackets-1))
-                        memcpy((void *)&tmpHeaderBuff[8], (void *)&maxDataSize, sizeof(maxDataSize));
+                        memcpy((void *)&tmpHeaderBuff[8], (void *)&d_payloadsize, sizeof(d_payloadsize));
                     else
                         memcpy((void *)&tmpHeaderBuff[8], (void *)&lastPacketSize, sizeof(lastPacketSize));
                 }
@@ -166,7 +179,7 @@ namespace gr {
 
             // Grab our next data chunk
             if (curPacket < (numPackets-1)) {
-            	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], maxDataSize));
+            	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], d_payloadsize));
             }
             else {
             	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], lastPacketSize));
@@ -177,7 +190,7 @@ namespace gr {
             if (d_header_type == HEADERTYPE_SEQSIZECRC) {
             	unsigned long  crc = crc32(0L, Z_NULL, 0);
                 if (curPacket < (numPackets-1))
-                	crc = crc32(crc, (const unsigned char*)&in[curPtr], maxDataSize);
+                	crc = crc32(crc, (const unsigned char*)&in[curPtr], d_payloadsize);
                 else
                 	crc = crc32(crc, (const unsigned char*)&in[curPtr], lastPacketSize);
 
@@ -188,7 +201,7 @@ namespace gr {
 
             udpsocket->send_to(transmitbuffer,d_endpoint);
 
-            curPtr = curPtr + maxDataSize;
+            curPtr = curPtr + d_payloadsize;
     	}
 
         return noutput_items;
@@ -201,35 +214,17 @@ namespace gr {
     {
         gr::thread::scoped_lock guard(d_mutex);
 
-        int maxDataSize=d_payloadsize;
-        switch (d_header_type) {
-        	case HEADERTYPE_NONE:
-        		maxDataSize=d_payloadsize;
-        	break;
-        	case HEADERTYPE_SEQNUM:
-        		maxDataSize = d_payloadsize - 8;
-        	break;
-
-        	case HEADERTYPE_SEQPLUSSIZE:
-        		maxDataSize = d_payloadsize - 12;
-        	break;
-
-        	case HEADERTYPE_SEQSIZECRC:
-        		maxDataSize = d_payloadsize - 12 - sizeof(unsigned long);
-        	break;
-        }
-
         const char *in = (const char *) input_items[0];
     	unsigned int noi = noutput_items * d_block_size;
 
     	// Calc our packet break-up
-    	float fNumPackets = (float)noi / (float)maxDataSize;
-    	int numPackets = noi / maxDataSize;
+    	float fNumPackets = (float)noi / (float)d_payloadsize;
+    	int numPackets = noi / d_payloadsize;
     	if (fNumPackets > (float)numPackets)
     		numPackets = numPackets + 1;
 
-    	// deal with a last packet < maxDataSize
-    	int lastPacketSize = noi - (noi / maxDataSize) * maxDataSize;
+    	// deal with a last packet < d_payloadsize
+    	int lastPacketSize = noi - (noi / d_payloadsize) * d_payloadsize;
 
     	std::vector<boost::asio::const_buffer> transmitbuffer;
     	int curPtr=0;
@@ -251,7 +246,7 @@ namespace gr {
 
                 if ((d_header_type == HEADERTYPE_SEQPLUSSIZE)||(d_header_type == HEADERTYPE_SEQSIZECRC)) {
                     if (curPacket < (numPackets-1))
-                        memcpy((void *)&tmpHeaderBuff[8], (void *)&maxDataSize, sizeof(maxDataSize));
+                        memcpy((void *)&tmpHeaderBuff[8], (void *)&d_payloadsize, sizeof(d_payloadsize));
                     else
                         memcpy((void *)&tmpHeaderBuff[8], (void *)&lastPacketSize, sizeof(lastPacketSize));
                 }
@@ -263,7 +258,7 @@ namespace gr {
 
             // Grab our next data chunk
             if (curPacket < (numPackets-1)) {
-            	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], maxDataSize));
+            	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], d_payloadsize));
             }
             else {
             	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], lastPacketSize));
@@ -274,7 +269,7 @@ namespace gr {
             if (d_header_type == HEADERTYPE_SEQSIZECRC) {
             	unsigned long  crc = crc32(0L, Z_NULL, 0);
                 if (curPacket < (numPackets-1))
-                	crc = crc32(crc, (const unsigned char*)&in[curPtr], maxDataSize);
+                	crc = crc32(crc, (const unsigned char*)&in[curPtr], d_payloadsize);
                 else
                 	crc = crc32(crc, (const unsigned char*)&in[curPtr], lastPacketSize);
 
@@ -285,7 +280,7 @@ namespace gr {
 
             udpsocket->send_to(transmitbuffer,d_endpoint);
 
-            curPtr = curPtr + maxDataSize;
+            curPtr = curPtr + d_payloadsize;
     	}
 
         return noutput_items;

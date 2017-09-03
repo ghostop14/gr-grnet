@@ -4,7 +4,7 @@
   <key>grnet_udp_sink</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
-  <make>grnet.udp_sink($type.size, $vlen, $addr, $port,$header,$payloadsize)</make>
+  <make>grnet.udp_sink($type.size, $vlen, $addr, $port,$header,$payloadsize,$send_eof)</make>
 	<param>
 		<name>Input Type</name>
 		<key>type</key>
@@ -37,14 +37,14 @@
 	</param>
 
 	<param>
-		<name>Address</name>
+		<name>Destination IP Address</name>
 		<key>addr</key>
 		<value>127.0.0.1</value>
 		<type>string</type>
 	</param>
 
 	<param>
-		<name>Port</name>
+		<name>Destination Port</name>
 		<key>port</key>
 		<value>2000</value>
 		<type>int</type>
@@ -82,7 +82,22 @@
 		<value>1472</value>
 		<type>int</type>
 	</param>
+	<param>
+		<name>Send Null Packet as EOF</name>
+		<key>send_eof</key>
+		<type>enum</type>
+		<option>
+			<name>Yes</name>
+			<key>True</key>
+		</option>
+		<option>
+			<name>No</name>
+			<key>False</key>
+		</option>
+	</param>
 	<check>$vlen &gt; 0</check>
+	<check>$port &gt; 0</check>
+	<check>$payloadsize &gt; 0</check>
 	<sink>
 		<name>in</name>
 		<type>$type</type>
