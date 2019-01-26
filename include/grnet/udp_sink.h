@@ -23,8 +23,9 @@
 #define INCLUDED_GRNET_UDP_SINK_H
 
 #include <grnet/api.h>
+#include <grnet/udpHeaderTypes.h>
+
 #include <gnuradio/sync_block.h>
-#include "udpHeaderTypes.h"
 
 namespace gr {
   namespace grnet {

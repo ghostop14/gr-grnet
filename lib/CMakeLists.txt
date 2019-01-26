@@ -31,9 +31,6 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 ########################################################################
 include(GrPlatform) #define LIB_SUFFIX
 
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
-
 list(APPEND grnet_sources
     tcp_sink_impl.cc
     tcp_source_impl.cc
@@ -48,7 +45,11 @@ if(NOT grnet_sources)
 endif(NOT grnet_sources)
 
 add_library(gnuradio-grnet SHARED ${grnet_sources})
-target_link_libraries(gnuradio-grnet ${Boost_LIBRARIES} ${GNURADIO_ALL_LIBRARIES} z)
+target_link_libraries(gnuradio-grnet gnuradio::gnuradio-runtime z)
+target_include_directories(gnuradio-grnet
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    PUBLIC $<INSTALL_INTERFACE:include>
+    )
 set_target_properties(gnuradio-grnet PROPERTIES DEFINE_SYMBOL "gnuradio_grnet_EXPORTS")
 
 if(APPLE)
@@ -64,31 +65,6 @@ include(GrMiscUtils)
 GR_LIBRARY_FOO(gnuradio-grnet RUNTIME_COMPONENT "grnet_runtime" DEVEL_COMPONENT "grnet_devel")
 
 ########################################################################
-# Build and register unit test
-########################################################################
-include(GrTest)
-
-include_directories(${CPPUNIT_INCLUDE_DIRS})
-
-list(APPEND test_grnet_sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_grnet.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/qa_grnet.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/qa_tcp_sink.cc
-)
-
-add_executable(test-grnet ${test_grnet_sources})
-
-target_link_libraries(
-  test-grnet
-  ${GNURADIO_RUNTIME_LIBRARIES}
-  ${Boost_LIBRARIES}
-  ${CPPUNIT_LIBRARIES}
-  gnuradio-grnet
-)
-
-GR_ADD_TEST(test_grnet test-grnet)
-
-########################################################################
 # Build test-netsink
 ########################################################################
 list(APPEND test_netsink_sources
@@ -102,11 +78,6 @@ add_executable(test-netsink ${test_netsink_sources})
 
 target_link_libraries(
   test-netsink
-  ${GNURADIO_RUNTIME_LIBRARIES}
-  ${Boost_LIBRARIES}
-  boost_thread
-  pthread
-  z
   gnuradio-grnet
 )
 
@@ -126,11 +97,6 @@ add_executable(test-netsource ${test_netsource_sources})
 
 target_link_libraries(
   test-netsource
-  ${GNURADIO_RUNTIME_LIBRARIES}
-  ${Boost_LIBRARIES}
-  boost_thread
-  pthread
-  z
   gnuradio-grnet
 )
 
@@ -141,4 +107,3 @@ install(TARGETS test-netsource DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" RUNTIME
 ########################################################################
 message(STATUS "Using install prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "Building for version: ${VERSION} / ${LIBVER}")
-
