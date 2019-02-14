@@ -20,7 +20,7 @@
 ########################################################################
 # Project setup
 ########################################################################
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.8)
 project(gr-grnet CXX C)
 enable_testing()
 
@@ -46,6 +46,7 @@ set(VERSION_INFO_API_COMPAT    0)
 set(VERSION_INFO_MINOR_VERSION 0)
 set(VERSION_INFO_MAINT_VERSION git)
 
+cmake_policy(SET CMP0011 New)
 ########################################################################
 # Compiler specific setup
 ########################################################################
