@@ -48,7 +48,7 @@ if(NOT grnet_sources)
 endif(NOT grnet_sources)
 
 add_library(gnuradio-grnet SHARED ${grnet_sources})
-target_link_libraries(gnuradio-grnet ${Boost_LIBRARIES} ${GNURADIO_ALL_LIBRARIES} z)
+target_link_libraries(gnuradio-grnet ${Boost_LIBRARIES} ${GNURADIO_ALL_LIBRARIES} z thrift volk)
 set_target_properties(gnuradio-grnet PROPERTIES DEFINE_SYMBOL "gnuradio_grnet_EXPORTS")
 
 if(APPLE)
@@ -84,6 +84,8 @@ target_link_libraries(
   ${Boost_LIBRARIES}
   ${CPPUNIT_LIBRARIES}
   gnuradio-grnet
+  thrift
+  volk
 )
 
 GR_ADD_TEST(test_grnet test-grnet)
@@ -108,6 +110,8 @@ target_link_libraries(
   pthread
   z
   gnuradio-grnet
+  thrift
+  volk
 )
 
 install(TARGETS test-netsink DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" RUNTIME)
@@ -132,6 +136,8 @@ target_link_libraries(
   pthread
   z
   gnuradio-grnet
+  thrift
+  volk
 )
 
 install(TARGETS test-netsource DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" RUNTIME)
