@@ -18,9 +18,9 @@
 # Boston, MA 02110-1301, USA.
 
 install(FILES
-	grnet_tcp_sink.xml
-	grnet_udp_sink.xml
-	grnet_tcp_source.xml
-	grnet_udp_source.xml
+	grnet_tcp_sink.block.yml
+	grnet_udp_sink.block.yml
+	grnet_tcp_source.block.yml
+	grnet_udp_source.block.yml
     DESTINATION share/gnuradio/grc/blocks
 )

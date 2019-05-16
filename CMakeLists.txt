@@ -46,7 +46,7 @@ set(VERSION_INFO_API_COMPAT    0)
 set(VERSION_INFO_MINOR_VERSION 0)
 set(VERSION_INFO_MAINT_VERSION git)
 
-cmake_policy(SET CMP0011 New)
+cmake_policy(SET CMP0011 NEW)
 ########################################################################
 # Compiler specific setup
 ########################################################################
@@ -62,7 +62,12 @@ include(GrVersion)
 ########################################################################
 # Install directories
 ########################################################################
+
+
 include(GrPlatform) #define LIB_SUFFIX
+if(NOT CMAKE_MODULES_DIR)
+  set(CMAKE_MODULES_DIR lib${LIB_SUFFIX}/cmake)
+endif(NOT CMAKE_MODULES_DIR)
 set(GR_RUNTIME_DIR      bin)
 set(GR_LIBRARY_DIR      lib${LIB_SUFFIX})
 set(GR_INCLUDE_DIR      include/howto)
@@ -75,6 +80,7 @@ set(GR_PKG_CONF_DIR     ${GR_CONF_DIR}/${CMAKE_PROJECT_NAME}/conf.d)
 set(GR_LIBEXEC_DIR      libexec)
 set(GR_PKG_LIBEXEC_DIR  ${GR_LIBEXEC_DIR}/${CMAKE_PROJECT_NAME})
 set(GRC_BLOCKS_DIR      ${GR_PKG_DATA_DIR}/grc/blocks)
+set(GR_CMAKE_DIR        ${CMAKE_MODULES_DIR}/grnet)
 
 
 
@@ -139,10 +145,6 @@ add_subdirectory(docs)
 ########################################################################
 # Install cmake search helper for this library
 ########################################################################
-if(NOT CMAKE_MODULES_DIR)
-  set(CMAKE_MODULES_DIR lib${LIB_SUFFIX}/cmake)
-endif(NOT CMAKE_MODULES_DIR)
-
 install(FILES cmake/Modules/grnetConfig.cmake
     DESTINATION ${CMAKE_MODULES_DIR}/grnet
 )
