@@ -45,11 +45,7 @@ if(NOT grnet_sources)
 endif(NOT grnet_sources)
 
 add_library(gnuradio-grnet SHARED ${grnet_sources})
-target_link_libraries(gnuradio-grnet gnuradio::gnuradio-runtime z)
-target_include_directories(gnuradio-grnet
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-    PUBLIC $<INSTALL_INTERFACE:include>
-    )
+target_link_libraries(gnuradio-grnet ${Boost_LIBRARIES} ${GNURADIO_ALL_LIBRARIES} z thrift volk)
 set_target_properties(gnuradio-grnet PROPERTIES DEFINE_SYMBOL "gnuradio_grnet_EXPORTS")
 
 if(APPLE)
@@ -63,6 +59,33 @@ endif(APPLE)
 ########################################################################
 include(GrMiscUtils)
 GR_LIBRARY_FOO(gnuradio-grnet RUNTIME_COMPONENT "grnet_runtime" DEVEL_COMPONENT "grnet_devel")
+
+########################################################################
+# Build and register unit test
+########################################################################
+include(GrTest)
+
+include_directories(${CPPUNIT_INCLUDE_DIRS})
+
+list(APPEND test_grnet_sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_grnet.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/qa_grnet.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/qa_tcp_sink.cc
+)
+
+add_executable(test-grnet ${test_grnet_sources})
+
+target_link_libraries(
+  test-grnet
+  ${GNURADIO_RUNTIME_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${CPPUNIT_LIBRARIES}
+  gnuradio-grnet
+  thrift
+  volk
+)
+
+GR_ADD_TEST(test_grnet test-grnet)
 
 ########################################################################
 # Build test-netsink
@@ -79,6 +102,8 @@ add_executable(test-netsink ${test_netsink_sources})
 target_link_libraries(
   test-netsink
   gnuradio-grnet
+  thrift
+  volk
 )
 
 install(TARGETS test-netsink DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" RUNTIME)
@@ -98,6 +123,8 @@ add_executable(test-netsource ${test_netsource_sources})
 target_link_libraries(
   test-netsource
   gnuradio-grnet
+  thrift
+  volk
 )
 
 install(TARGETS test-netsource DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" RUNTIME)
