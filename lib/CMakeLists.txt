@@ -31,9 +31,6 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
 ########################################################################
 include(GrPlatform) #define LIB_SUFFIX
 
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
-
 list(APPEND grnet_sources
     tcp_sink_impl.cc
     tcp_source_impl.cc
@@ -104,11 +101,6 @@ add_executable(test-netsink ${test_netsink_sources})
 
 target_link_libraries(
   test-netsink
-  ${GNURADIO_RUNTIME_LIBRARIES}
-  ${Boost_LIBRARIES}
-  boost_thread
-  pthread
-  z
   gnuradio-grnet
   thrift
   volk
@@ -130,11 +122,6 @@ add_executable(test-netsource ${test_netsource_sources})
 
 target_link_libraries(
   test-netsource
-  ${GNURADIO_RUNTIME_LIBRARIES}
-  ${Boost_LIBRARIES}
-  boost_thread
-  pthread
-  z
   gnuradio-grnet
   thrift
   volk
@@ -147,4 +134,3 @@ install(TARGETS test-netsource DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" RUNTIME
 ########################################################################
 message(STATUS "Using install prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "Building for version: ${VERSION} / ${LIBVER}")
-

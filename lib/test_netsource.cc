@@ -10,9 +10,6 @@
 #include "config.h"
 #endif
 
-#include <cppunit/TextTestRunner.h>
-#include <cppunit/XmlOutputter.h>
-
 #include <gnuradio/unittests.h>
 #include <iostream>
 #include <fstream>
@@ -148,4 +145,3 @@ main (int argc, char **argv)
 	return 0;
 
 }
-

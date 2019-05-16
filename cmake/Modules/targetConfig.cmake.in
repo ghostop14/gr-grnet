@@ -1,4 +1,4 @@
-# Copyright 2011 Free Software Foundation, Inc.
+# Copyright 2018 Free Software Foundation, Inc.
 #
 # This file is part of GNU Radio
 #
@@ -17,10 +17,9 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
-install(FILES
-	grnet_tcp_sink.block.yml
-	grnet_udp_sink.block.yml
-	grnet_tcp_source.block.yml
-	grnet_udp_source.block.yml
-    DESTINATION share/gnuradio/grc/blocks
-)
+include(CMakeFindDependencyMacro)
+
+foreach(dep "@TARGET_DEPENDENCIES@")
+    find_dependency(${dep})
+endforeach()
+include("${CMAKE_CURRENT_LIST_DIR}/@TARGET@Targets.cmake")
