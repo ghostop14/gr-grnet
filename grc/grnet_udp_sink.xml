@@ -4,7 +4,7 @@
   <key>grnet_udp_sink</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
-  <make>grnet.udp_sink($type.size, $vlen, $addr, $port,$header,$payloadsize,$send_eof)</make>
+  <make>grnet.udp_sink($type.size, 1, $addr, $port,$header,$payloadsize,$send_eof)</make>
 	<param>
 		<name>Input Type</name>
 		<key>type</key>
@@ -50,7 +50,7 @@
 		<type>int</type>
 	</param>
 	<param>
-		<name>Header/CRC</name>
+		<name>Header</name>
 		<key>header</key>
 		<type>enum</type>
 		<option>
@@ -58,26 +58,20 @@
 			<key>0</key>
 		</option>
 		<option>
-			<name>32-bit Sequence Number</name>
+			<name>64-bit Sequence Number</name>
 			<key>1</key>
 		</option>
 		<option>
-			<name>Sequence + 32-bit data size</name>
+			<name>Sequence + 16-bit data size</name>
 			<key>2</key>
 		</option>
 		<option>
-			<name>Sequence,data size, and trailing crc32 checksum</name>
-			<key>3</key>
+			<name>CHDR (64-bit)</name>
+			<key>4</key>
 		</option>
 	</param>
 	<param>
-		<name>Vec Length</name>
-		<key>vlen</key>
-		<value>1</value>
-		<type>int</type>
-	</param>
-	<param>
-		<name>Payload Size</name>
+		<name>UDP Packet Data Size</name>
 		<key>payloadsize</key>
 		<value>1472</value>
 		<type>int</type>
@@ -87,21 +81,19 @@
 		<key>send_eof</key>
 		<type>enum</type>
 		<option>
-			<name>Yes</name>
-			<key>True</key>
-		</option>
-		<option>
 			<name>No</name>
 			<key>False</key>
 		</option>
+		<option>
+			<name>Yes</name>
+			<key>True</key>
+		</option>
 	</param>
-	<check>$vlen &gt; 0</check>
 	<check>$port &gt; 0</check>
 	<check>$payloadsize &gt; 0</check>
 	<sink>
 		<name>in</name>
 		<type>$type</type>
-		<vlen>$vlen</vlen>
 	</sink>
 	<doc>
 This block provides basic UDP data transmission capabilities with a few additional features for processing in custom receiving applications.  

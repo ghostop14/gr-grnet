@@ -26,7 +26,7 @@
 #include <boost/asio/ip/udp.hpp>
 #include <queue>
 
-#include "udpHeaderTypes.h"
+#include "packet_headers.h"
 
 namespace gr {
   namespace grnet {
@@ -37,6 +37,17 @@ namespace gr {
         size_t d_itemsize;
         size_t d_veclen;
         size_t d_block_size;
+
+        bool d_notifyMissed;
+        bool d_sourceZeros;
+
+    	int d_port;
+        int d_header_type;
+        int d_header_size;
+        uint16_t d_payloadsize;
+        int d_precompDataSize;
+        uint64_t d_seq_num;
+        unsigned char *localBuffer;
 
         boost::system::error_code ec;
 
@@ -49,9 +60,10 @@ namespace gr {
 
         boost::mutex d_mutex;
 
-    	int maxSize;
+        uint64_t getHeaderSeqNum();
+
      public:
-      udp_source_impl(size_t itemsize,size_t vecLen, int port);
+      udp_source_impl(size_t itemsize,size_t vecLen, int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros);
       ~udp_source_impl();
 
       bool stop();

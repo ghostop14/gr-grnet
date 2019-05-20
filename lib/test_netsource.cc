@@ -77,7 +77,7 @@ main (int argc, char **argv)
 	if (useTCP)
 		testTCP = new tcp_source_impl(sizeof(char),vecLen,port);
 	else
-		testUDP = new udp_source_impl(sizeof(char),vecLen,port);
+		testUDP = new udp_source_impl(sizeof(char),vecLen,port,HEADERTYPE_NONE, 1472, false,true);
 
 	std::cout << "Connected.  Waiting for data..." << std::endl;
 	int i;

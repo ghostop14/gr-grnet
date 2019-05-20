@@ -4,7 +4,7 @@
   <key>grnet_udp_source</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
-  <make>grnet.udp_source($type.size, $vlen, $port)</make>
+  <make>grnet.udp_source($type.size, 1, $port,$header,$payloadsize,$notifyMissed,$sourceZeros)</make>
 	<param>
 		<name>Input Type</name>
 		<key>type</key>
@@ -39,19 +39,64 @@
 	<param>
 		<name>Port</name>
 		<key>port</key>
-		<value>0</value>
+		<value>2000</value>
 		<type>int</type>
 	</param>
 	<param>
-		<name>Vec Length</name>
-		<key>vlen</key>
-		<value>1</value>
+		<name>Header</name>
+		<key>header</key>
+		<type>enum</type>
+		<option>
+			<name>None</name>
+			<key>0</key>
+		</option>
+		<option>
+			<name>64-bit Sequence Number</name>
+			<key>1</key>
+		</option>
+		<option>
+			<name>Sequence + 16-bit data size</name>
+			<key>2</key>
+		</option>
+		<option>
+			<name>CHDR (64-bit)</name>
+			<key>4</key>
+		</option>
+	</param>
+	<param>
+		<name>UDP Packet Data Size</name>
+		<key>payloadsize</key>
+		<value>1472</value>
 		<type>int</type>
 	</param>
-	<check>$vlen &gt; 0</check>
+	<param>
+		<name>Notify Missed Frames</name>
+		<key>notifyMissed</key>
+		<type>enum</type>
+		<option>
+			<name>No</name>
+			<key>False</key>
+		</option>
+		<option>
+			<name>Yes</name>
+			<key>True</key>
+		</option>
+	</param>
+	<param>
+		<name>Source 0s When No Data</name>
+		<key>sourceZeros</key>
+		<type>enum</type>
+		<option>
+			<name>Yes</name>
+			<key>True</key>
+		</option>
+		<option>
+			<name>No</name>
+			<key>False</key>
+		</option>
+	</param>
 	<source>
 		<name>out</name>
 		<type>$type</type>
-		<vlen>$vlen</vlen>
 	</source>
 </block>

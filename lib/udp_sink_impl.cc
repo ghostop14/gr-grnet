@@ -54,40 +54,40 @@ namespace gr {
     	// Now for local nets that support jumbo frames, the max payload size is 8972 (9000-the UDP 28-byte header)
     	// Same rules apply with fragmentation.
 
+    	d_port = port;
+
+    	d_header_size = 0;
+
         switch (d_header_type) {
         	case HEADERTYPE_SEQNUM:
-        		d_payloadsize = d_payloadsize - 8;  // take back our header
+        		d_header_size = sizeof(HeaderSeqNum);
         	break;
 
         	case HEADERTYPE_SEQPLUSSIZE:
-        		d_payloadsize = d_payloadsize - 12; // take back our header
+        		d_header_size = sizeof(HeaderSeqPlusSize);
         	break;
 
-        	case HEADERTYPE_SEQSIZECRC:
-        		d_payloadsize = d_payloadsize - 12 - sizeof(unsigned long); // Take back header and trailing crc
+        	case HEADERTYPE_CHDR:
+        		d_header_size = sizeof(CHDR);
+        	break;
+
+        	case HEADERTYPE_NONE:
+        	break;
+
+        	default:
+        		  std::cout << "[UDP Sink] Error: Unknown header type." << std::endl;
+        	      exit(1);
         	break;
         }
 
     	if (d_payloadsize<8) {
-  		  std::cout << "Error: payload size is too small.  Must be at least 8 bytes once header/trailer adjustments are made." << std::endl;
+  		  std::cout << "[UDP Sink] Error: payload size is too small.  Must be at least 8 bytes once header/trailer adjustments are made." << std::endl;
   	      exit(1);
     	}
 
     	d_block_size = d_itemsize * d_veclen;
 
-    	switch (d_header_type) {
-    	case HEADERTYPE_NONE:
-    		d_header_size = 0;
-    	break;
-
-    	case HEADERTYPE_SEQNUM:
-    		d_header_size = 8;
-    	break;
-    	case HEADERTYPE_SEQPLUSSIZE:
-    	case HEADERTYPE_SEQSIZECRC:
-    		d_header_size = 12;
-    	break;
-    	}
+    	localBuffer = new unsigned char[d_payloadsize];
 
         std::string s__port = (boost::format("%d") % port).str();
         std::string s__host = host.empty() ? std::string("localhost") : host;
@@ -97,7 +97,12 @@ namespace gr {
         d_endpoint = *resolver.resolve(query);
 
 		udpsocket = new boost::asio::ip::udp::socket(d_io_service);
-    	udpsocket->connect(d_endpoint);
+
+		// Open will let you transmit UDP without "connecting" to the remote system(s)
+		udpsocket->open(boost::asio::ip::udp::v4());
+
+		int outMultiple = (d_payloadsize - d_header_size) / d_block_size;
+		gr::block::set_output_multiple(outMultiple);
     }
 
     /*
@@ -125,7 +130,52 @@ namespace gr {
             d_io_service.reset();
             d_io_service.stop();
         }
+
+        if (localBuffer) {
+        	delete[] localBuffer;
+        	localBuffer = NULL;
+        }
+
         return true;
+    }
+
+    void udp_sink_impl::buildHeader() {
+        switch (d_header_type) {
+        	case HEADERTYPE_SEQNUM:
+        	{
+        		d_seq_num++;
+        		HeaderSeqNum seqHeader;
+        		seqHeader.seqnum = d_seq_num;
+        		memcpy((void *)tmpHeaderBuff,(void *)&seqHeader,d_header_size);
+        	}
+        	break;
+
+        	case HEADERTYPE_SEQPLUSSIZE:
+        	{
+        		d_seq_num++;
+        		HeaderSeqPlusSize seqHeaderPlusSize;
+        		seqHeaderPlusSize.seqnum = d_seq_num;
+        		seqHeaderPlusSize.length = d_payloadsize;
+        		memcpy((void *)tmpHeaderBuff,(void *)&seqHeaderPlusSize,d_header_size);
+        	}
+        	break;
+
+        	case HEADERTYPE_CHDR:
+        	{
+        		d_seq_num++;
+
+        		// Rollover at 12-bits
+        		if (d_seq_num > 0x0FFF)
+        			d_seq_num = 1;
+
+        		CHDR chdr;
+        		chdr.sid = d_port;
+        		chdr.length = d_payloadsize;
+        		chdr.seqPlusFlags = d_seq_num;  // For now set all other flags to zero.
+        		memcpy((void *)tmpHeaderBuff,(void *)&chdr,d_header_size);
+        	}
+        	break;
+        }
     }
 
     int
@@ -135,24 +185,22 @@ namespace gr {
     {
         gr::thread::scoped_lock guard(d_mutex);
 
+        long numBytesToTransmit = noutput_items * d_block_size;
         const char *in = (const char *) input_items[0];
-    	unsigned int noi = noutput_items * d_block_size;
 
-    	// Calc our packet break-up
-    	float fNumPackets = (float)noi / (float)d_payloadsize;
-    	int numPackets = noi / d_payloadsize;
-    	if (fNumPackets > (float)numPackets)
-    		numPackets = numPackets + 1;
+        // Build a long local queue to pull from so we can break it up easier
+        for (int i=0;i<numBytesToTransmit;i++) {
+        	localQueue.push(in[i]);
+        }
 
-    	// deal with a last packet < d_payloadsize
-    	int lastPacketSize = noi - (noi / d_payloadsize) * d_payloadsize;
-
+        // Local boost buffer for transmitting
     	std::vector<boost::asio::const_buffer> transmitbuffer;
-    	int curPtr=0;
 
-    	for (int curPacket=0;curPacket < numPackets; curPacket++) {
+    	while (!localQueue.empty()) {
     		// Clear the next transmit buffer
     		transmitbuffer.clear();
+    		int bytesAvailable = localQueue.size();
+    		int bytesInBuffer = 0;
 
     		// build our next header if we need it
             if (d_header_type != HEADERTYPE_NONE) {
@@ -163,45 +211,35 @@ namespace gr {
             	// want to send the header.
             	tmpHeaderBuff[0]=tmpHeaderBuff[1]=tmpHeaderBuff[2]=tmpHeaderBuff[3]=0xFF;
 
+
                 memcpy((void *)&tmpHeaderBuff[4], (void *)&d_seq_num, sizeof(d_seq_num));
 
                 if ((d_header_type == HEADERTYPE_SEQPLUSSIZE)||(d_header_type == HEADERTYPE_SEQSIZECRC)) {
-                    if (curPacket < (numPackets-1))
+                	// NOTE: Header size field includes the whole data block including the header.
+                	if (bytesAvailable >= d_payloadsize)
                         memcpy((void *)&tmpHeaderBuff[8], (void *)&d_payloadsize, sizeof(d_payloadsize));
-                    else
-                        memcpy((void *)&tmpHeaderBuff[8], (void *)&lastPacketSize, sizeof(lastPacketSize));
+                    else {
+                    	int newSize = bytesAvailable + d_header_size;
+                        memcpy((void *)&tmpHeaderBuff[8], (void *)&newSize, sizeof(newSize));
+                    }
                 }
 
                 transmitbuffer.push_back(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size));
-
-                // udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size),d_endpoint);
+                bytesInBuffer = d_header_size;
             }
 
-            // Grab our next data chunk
-            if (curPacket < (numPackets-1)) {
-            	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], d_payloadsize));
-            }
-            else {
-            	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], lastPacketSize));
-            }
-            // Actual transmit is now further down
-            // udpsocket->send_to(boost::asio::buffer((const void *)in, noi),d_endpoint);
+            int bytesRemaining = d_payloadsize - bytesInBuffer;
 
-            if (d_header_type == HEADERTYPE_SEQSIZECRC) {
-            	unsigned long  crc = crc32(0L, Z_NULL, 0);
-                if (curPacket < (numPackets-1))
-                	crc = crc32(crc, (const unsigned char*)&in[curPtr], d_payloadsize);
-                else
-                	crc = crc32(crc, (const unsigned char*)&in[curPtr], lastPacketSize);
+            if (bytesRemaining > bytesAvailable)
+            	bytesRemaining = bytesAvailable;
 
-                memcpy((void *)tmpHeaderBuff, (void *)&crc, sizeof(crc));
-                transmitbuffer.push_back(boost::asio::buffer((const void *)tmpHeaderBuff, sizeof(crc)));
-                // udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, sizeof(crc)),d_endpoint);
+            for (int i=0;i<bytesRemaining;i++) {
+            	localBuffer[i] = localQueue.front();
+            	localQueue.pop();
             }
 
+        	transmitbuffer.push_back(boost::asio::buffer((const void *)localBuffer, bytesRemaining));
             udpsocket->send_to(transmitbuffer,d_endpoint);
-
-            curPtr = curPtr + d_payloadsize;
     	}
 
         return noutput_items;
@@ -214,73 +252,42 @@ namespace gr {
     {
         gr::thread::scoped_lock guard(d_mutex);
 
+        long numBytesToTransmit = noutput_items * d_block_size;
         const char *in = (const char *) input_items[0];
-    	unsigned int noi = noutput_items * d_block_size;
 
-    	// Calc our packet break-up
-    	float fNumPackets = (float)noi / (float)d_payloadsize;
-    	int numPackets = noi / d_payloadsize;
-    	if (fNumPackets > (float)numPackets)
-    		numPackets = numPackets + 1;
+        // Build a long local queue to pull from so we can break it up easier
+        for (int i=0;i<numBytesToTransmit;i++) {
+        	localQueue.push(in[i]);
+        }
 
-    	// deal with a last packet < d_payloadsize
-    	int lastPacketSize = noi - (noi / d_payloadsize) * d_payloadsize;
-
+        // Local boost buffer for transmitting
     	std::vector<boost::asio::const_buffer> transmitbuffer;
-    	int curPtr=0;
 
-    	for (int curPacket=0;curPacket < numPackets; curPacket++) {
+    	while (!localQueue.empty()) {
     		// Clear the next transmit buffer
     		transmitbuffer.clear();
+    		int bytesAvailable = localQueue.size();
+    		int bytesInBuffer = 0;
 
     		// build our next header if we need it
             if (d_header_type != HEADERTYPE_NONE) {
-            	if (d_seq_num == 0xFFFFFFFF)
-            		d_seq_num = 0;
-
-            	d_seq_num++;
-            	// want to send the header.
-            	tmpHeaderBuff[0]=tmpHeaderBuff[1]=tmpHeaderBuff[2]=tmpHeaderBuff[3]=0xFF;
-
-                memcpy((void *)&tmpHeaderBuff[4], (void *)&d_seq_num, sizeof(d_seq_num));
-
-                if ((d_header_type == HEADERTYPE_SEQPLUSSIZE)||(d_header_type == HEADERTYPE_SEQSIZECRC)) {
-                    if (curPacket < (numPackets-1))
-                        memcpy((void *)&tmpHeaderBuff[8], (void *)&d_payloadsize, sizeof(d_payloadsize));
-                    else
-                        memcpy((void *)&tmpHeaderBuff[8], (void *)&lastPacketSize, sizeof(lastPacketSize));
-                }
-
+            	buildHeader();
                 transmitbuffer.push_back(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size));
-
-                // udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size),d_endpoint);
+                bytesInBuffer = d_header_size;
             }
 
-            // Grab our next data chunk
-            if (curPacket < (numPackets-1)) {
-            	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], d_payloadsize));
-            }
-            else {
-            	transmitbuffer.push_back(boost::asio::buffer((const void *)&in[curPtr], lastPacketSize));
-            }
-            // Actual transmit is now further down
-            // udpsocket->send_to(boost::asio::buffer((const void *)in, noi),d_endpoint);
+            int bytesRemaining = d_payloadsize - bytesInBuffer;
 
-            if (d_header_type == HEADERTYPE_SEQSIZECRC) {
-            	unsigned long  crc = crc32(0L, Z_NULL, 0);
-                if (curPacket < (numPackets-1))
-                	crc = crc32(crc, (const unsigned char*)&in[curPtr], d_payloadsize);
-                else
-                	crc = crc32(crc, (const unsigned char*)&in[curPtr], lastPacketSize);
+            if (bytesRemaining > bytesAvailable)
+            	bytesRemaining = bytesAvailable;
 
-                memcpy((void *)tmpHeaderBuff, (void *)&crc, sizeof(crc));
-                transmitbuffer.push_back(boost::asio::buffer((const void *)tmpHeaderBuff, sizeof(crc)));
-                // udpsocket->send_to(boost::asio::buffer((const void *)tmpHeaderBuff, sizeof(crc)),d_endpoint);
+            for (int i=0;i<bytesRemaining;i++) {
+            	localBuffer[i] = localQueue.front();
+            	localQueue.pop();
             }
 
+        	transmitbuffer.push_back(boost::asio::buffer((const void *)localBuffer, bytesRemaining));
             udpsocket->send_to(transmitbuffer,d_endpoint);
-
-            curPtr = curPtr + d_payloadsize;
     	}
 
         return noutput_items;

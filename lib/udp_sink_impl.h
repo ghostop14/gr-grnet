@@ -24,26 +24,32 @@
 #include <grnet/udp_sink.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/udp.hpp>
+#include <queue>
 
-#include "udpHeaderTypes.h"
+#include "packet_headers.h"
 
 namespace gr {
   namespace grnet {
 
     class udp_sink_impl : public udp_sink
     {
-     private:
+     protected:
+    	int d_port;
         size_t d_itemsize;
         size_t d_veclen;
         size_t d_block_size;
 
         int d_header_type;
         int d_header_size;
-        int d_payloadsize;
-        unsigned int d_seq_num;
+        uint16_t d_payloadsize;
+        uint64_t d_seq_num;
         bool b_send_eof;
 
-        char tmpHeaderBuff[12];  // 32-bit sync word (0xFFFFFFFF), 32-bit sequence num and 32-bit data size
+        char tmpHeaderBuff[12];  // Largest header is 10 bytes so this should be big enough.
+
+        std::queue<char> localQueue;
+        unsigned char *localBuffer;
+
 
         boost::system::error_code ec;
 
@@ -52,6 +58,8 @@ namespace gr {
         boost::asio::ip::udp::socket *udpsocket;
 
         boost::mutex d_mutex;
+
+        virtual void buildHeader(); // returns header size.  Header is stored in tmpHeaderBuff
 
      public:
       udp_sink_impl(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType=HEADERTYPE_NONE,int payloadsize=1472,bool send_eof=true);
