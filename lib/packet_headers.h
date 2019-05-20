@@ -65,4 +65,24 @@ public:
 	inline bool hasFractionalTimestamp(void) { int16_t timeBit; timeBit = seqPlusFlags & 0x2000; if (timeBit > 0) return true; else return false; };
 };
 
+class OldATAHeader {
+public:
+	// Total size: 64 bytes
+  uint8_t group, version, bitsPerSample, binaryPoint;
+  uint32_t order;
+  uint8_t type, streams, polCode, hdrLen;
+  uint32_t src;
+  uint32_t chan;
+  uint32_t seq;
+  double freq;
+  double sampleRate;
+  float usableFraction;
+  float reserved;
+  uint64_t absTime;
+  uint32_t flags;
+  uint32_t len;
+
+  OldATAHeader() { seq = 0; freq = 0.0; sampleRate = 0.0; };
+};
+
 #endif /* LIB_PACKET_HEADERS_H_ */

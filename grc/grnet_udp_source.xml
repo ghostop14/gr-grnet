@@ -62,6 +62,10 @@
 			<name>CHDR (64-bit, no timestamp)</name>
 			<key>4</key>
 		</option>
+		<option>
+			<name>Old ATA Header</name>
+			<key>5</key>
+		</option>
 	</param>
 	<param>
 		<name>UDP Packet Data Size</name>

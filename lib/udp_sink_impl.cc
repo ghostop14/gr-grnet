@@ -102,6 +102,10 @@ namespace gr {
 		udpsocket->open(boost::asio::ip::udp::v4());
 
 		int outMultiple = (d_payloadsize - d_header_size) / d_block_size;
+
+		if (outMultiple == 1)
+			outMultiple = 2;  // Ensure we get pairs, for instance complex -> ichar pairs
+
 		gr::block::set_output_multiple(outMultiple);
     }
 
