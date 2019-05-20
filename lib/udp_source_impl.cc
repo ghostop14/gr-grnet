@@ -50,6 +50,8 @@ namespace gr {
     	d_seq_num = 0;
     	d_notifyMissed = notifyMissed;
     	d_sourceZeros = sourceZeros;
+    	d_header_type = headerType;;
+    	d_payloadsize = payloadsize;
 
         switch (d_header_type) {
         	case HEADERTYPE_SEQNUM:

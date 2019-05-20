@@ -59,7 +59,7 @@
 			<key>2</key>
 		</option>
 		<option>
-			<name>CHDR (64-bit)</name>
+			<name>CHDR (64-bit, no timestamp)</name>
 			<key>4</key>
 		</option>
 	</param>
