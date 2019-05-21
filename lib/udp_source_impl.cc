@@ -109,6 +109,10 @@ namespace gr {
     	    exit(1);
     	}
 
+    	// Make sure we have a big enough buffer
+    	// boost::asio::socket_base::receive_buffer_size option(65535);
+    	// udpsocket->set_option(option);
+
 		int outMultiple = (d_payloadsize - d_header_size) / d_block_size;
 
 		if (outMultiple == 1)
@@ -515,7 +519,7 @@ namespace gr {
     	}
 
     	if (skippedPackets > 0 && d_notifyMissed) {
-    		std::cout << "[UDP Sink:" << d_port << "] missed packets: " << skippedPackets << std::endl;
+    		std::cout << "[UDP Sink:" << d_port << "] missed  packets: " << skippedPackets << std::endl;
     	}
 
     	// firstTime = false;
