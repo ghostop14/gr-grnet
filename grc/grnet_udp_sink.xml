@@ -97,8 +97,7 @@
 	</sink>
 	<doc>
 This block provides basic UDP data transmission capabilities with a few additional features for processing in custom receiving applications.  
-A header can be added that provides 4 0xFF bytes to form a sync word along with a packet sequence number for detecting out-of-sequence 
-packets as well as a packet size.  A 64-bit CRC field based on zlib's crc32 function can also be added to the end of the packets for integrity checking.  
+A header can be added in various formats for tracking.  For instance all headers also provide a sequence number that can be used to identify gaps in packets.  
 Note that payload size impacts the overall size of a single UDP packet.  For a normal network, a payload size of 1472 (1500-28 for UDP headers) represents the max size for a standard UDP packet.  
 For a Jumbo frames 8972 can be used (9000-28).  Be careful adjusting this parameter as you could inadvertently cause unnecessary packet fragmentation and reconstruction.
 

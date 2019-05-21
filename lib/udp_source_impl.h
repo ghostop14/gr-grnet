@@ -58,7 +58,7 @@ namespace gr {
         boost::asio::ip::udp::socket *udpsocket;
 
         boost::asio::streambuf read_buffer;
-    	std::queue<char> localQueue;
+    	std::queue<unsigned char> localQueue;
 
         boost::mutex d_mutex;
 

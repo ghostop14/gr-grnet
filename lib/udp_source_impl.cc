@@ -40,10 +40,11 @@ namespace gr {
      */
     udp_source_impl::udp_source_impl(size_t itemsize,size_t vecLen,int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros)
       : gr::sync_block("udp_source",
-              gr::io_signature::make(0, 0, 0),
-              gr::io_signature::make(1, 1, itemsize*vecLen)),
-    d_itemsize(itemsize), d_veclen(vecLen)
+              gr::io_signature::make(0, 0, 0),gr::io_signature::make(1, 1, itemsize*vecLen))
     {
+    	d_itemsize = itemsize;
+    	d_veclen = vecLen;
+
     	d_block_size = d_itemsize * d_veclen;
     	d_port = port;
     	d_seq_num = 0;
@@ -105,7 +106,7 @@ namespace gr {
         }
     	catch(const std::exception& ex)
     	{
-    	    std::cerr << "Error occurred: " << ex.what() << std::endl;
+    	    std::cerr << "[UDP Source] Error occurred: " << ex.what() << std::endl;
     	    exit(1);
     	}
 
@@ -118,6 +119,13 @@ namespace gr {
 		if (outMultiple == 1)
 			outMultiple = 2;  // Ensure we get pairs, for instance complex -> ichar pairs
 
+		/*
+    	boost::asio::ip::mtu option;
+    	udpsocket->get_option(option);
+    	size_t mtu = option.value();
+
+		std::cout << "[UDP Source] Listening for data on UDP port " << port << " MTU Size: " << mtu << "." << std::endl; //   Output multiple: " << outMultiple << "." << std::endl;
+		*/
 		std::cout << "[UDP Source] Listening for data on UDP port " << port << "." << std::endl; //   Output multiple: " << outMultiple << "." << std::endl;
 
 		gr::block::set_output_multiple(outMultiple);
@@ -241,7 +249,7 @@ namespace gr {
         			firstTime = false;
         	}
         	else {
-        		if (underRunCounter > 100)
+        		if (underRunCounter > 10)
         			underRunCounter = 0;
         	}
 
@@ -480,28 +488,10 @@ namespace gr {
     			uint64_t pktSeqNum = getHeaderSeqNum();
 
     			if (d_seq_num > 0) { // d_seq_num will be 0 when this block starts
-    				/*
-        	    	if (testCount == 0) {
-        	    		std::cout << "packet header=" << pktSeqNum << std::endl;
-        	    		std::cout << "d_seq_num=" << d_seq_num << std::endl;
-        	    	}
-        	    	else {
-        	    		if (testCount > 10)
-        	    			testCount = 0;
-        	    		else
-                	    	testCount++;
-
-        	    	}
-					*/
         			if (pktSeqNum > d_seq_num) {
         				// Ideally pktSeqNum = d_seq_num + 1.  Therefore this should do += 0 when no packets are dropped.
         				skippedPackets += pktSeqNum - d_seq_num - 1;
         			}
-        			/*
-        			else {
-        				// May have rolled over or source started over.  Just reset internally.
-        			}
-        			*/
 
         			// Store as current for next pass.
     				d_seq_num = pktSeqNum;

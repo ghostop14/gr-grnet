@@ -12,6 +12,7 @@
 #include "grnet/tcp_source.h"
 #include "grnet/udp_sink.h"
 #include "grnet/udp_source.h"
+#include "grnet/PCAPUDPSource.h"
 %}
 
 
@@ -26,3 +27,5 @@ GR_SWIG_BLOCK_MAGIC2(grnet, udp_sink);
 
 %include "grnet/udp_source.h"
 GR_SWIG_BLOCK_MAGIC2(grnet, udp_source);
+%include "grnet/PCAPUDPSource.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, PCAPUDPSource);

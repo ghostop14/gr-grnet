@@ -22,6 +22,6 @@ install(FILES
 	grnet_udp_sink.xml
 	grnet_tcp_source.xml
 	grnet_udp_source.xml
-	grnet_pcap_udp_source.xml
+    grnet_PCAPUDPSource.xml 
     DESTINATION share/gnuradio/grc/blocks
 )

@@ -25,6 +25,6 @@ install(FILES
     tcp_sink.h 
     udp_sink.h 
     tcp_source.h 
-    udp_source.h 
-    DESTINATION include/grnet
+    udp_source.h
+    PCAPUDPSource.h DESTINATION include/grnet
 )

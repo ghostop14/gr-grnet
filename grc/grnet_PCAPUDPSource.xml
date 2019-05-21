@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <block>
-  <name>UDP Source (grnet)</name>
-  <key>grnet_udp_source</key>
+  <name>UDP PCAP Source (grnet)</name>
+  <key>grnet_pcap_udp_source</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
-  <make>grnet.udp_source($type.size, 1, $port,$header,$payloadsize,$notifyMissed,False)</make>
+  <make>grnet.PCAPUDPSource($type.size,$port,$header,$payloadsize,$notifyMissed,$file,$repeatFile)</make>
 	<param>
 		<name>Input Type</name>
 		<key>type</key>
@@ -37,7 +37,13 @@
 	</param>
 
 	<param>
-		<name>Port</name>
+		<name>File</name>
+		<key>file</key>
+		<value></value>
+		<type>file_open</type>
+	</param>
+	<param>
+		<name>Traffic For UDP Port</name>
 		<key>port</key>
 		<value>2000</value>
 		<type>int</type>
@@ -86,11 +92,21 @@
 			<key>True</key>
 		</option>
 	</param>
+	<param>
+		<name>Repeat File</name>
+		<key>repeatFile</key>
+		<type>enum</type>
+		<option>
+			<name>Yes</name>
+			<key>True</key>
+		</option>
+		<option>
+			<name>No</name>
+			<key>False</key>
+		</option>
+	</param>
 	<source>
 		<name>out</name>
 		<type>$type</type>
 	</source>
-	<doc>
-	This block listens for traffic on the specified UDP port and outputs the specified data type.  Note that the header setting and payload size should match on both the sender and receiver.  For a normal network, a payload size of 1472 (1500-28 for UDP headers) represents the max size for a standard UDP packet.  For a Jumbo frames 8972 can be used (9000-28).  Be careful adjusting this parameter as you could inadvertently cause unnecessary packet fragmentation and reconstruction.
-	</doc>
 </block>
