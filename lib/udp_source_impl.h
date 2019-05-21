@@ -46,6 +46,8 @@ namespace gr {
         int d_header_size;
         uint16_t d_payloadsize;
         int d_precompDataSize;
+        int d_precompDataOverItemSize;
+
         uint64_t d_seq_num;
         unsigned char *localBuffer;
 
@@ -69,7 +71,7 @@ namespace gr {
       bool stop();
 
       size_t dataAvailable();
-      size_t netDataAvailable();
+      inline size_t netDataAvailable();
 
       // Where all the action really happens
       int work_test(int noutput_items,

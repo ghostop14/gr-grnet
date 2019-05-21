@@ -86,6 +86,7 @@ namespace gr {
     	}
 
     	d_precompDataSize = d_payloadsize - d_header_size;
+    	d_precompDataOverItemSize = d_precompDataSize / d_itemsize;
 
     	localBuffer = new unsigned char[d_payloadsize];
 
@@ -212,7 +213,14 @@ namespace gr {
         gr_vector_void_star &output_items)
     {
         gr::thread::scoped_lock guard(d_mutex);
+/*
+    	static int testCount=0;
 
+    	if (testCount == 0) {
+    		std::cout << "Entering work" << std::endl;
+
+    	}
+*/
     	int bytesAvailable = netDataAvailable();
         unsigned char *out = (unsigned char *) output_items[0];
     	unsigned int numRequested = noutput_items * d_block_size;
@@ -230,7 +238,6 @@ namespace gr {
         	}
 
         	underRunCounter++;
-
         	if (d_sourceZeros) {
             	// Just return 0's
             	memset((void *)out,0x00,numRequested);
@@ -275,9 +282,9 @@ namespace gr {
     	// let's figure out how much we have in relation to noutput_items, accounting for headers
 
     	// Number of data-only blocks requested (set_output_multiple() should make sure this is an integer multiple)
-    	long blocksRequested = noutput_items / (d_precompDataSize / d_itemsize);
+    	long blocksRequested = noutput_items / d_precompDataOverItemSize;
     	// Number of blocks available accounting for the header as well.
-    	long blocksAvailable = localQueue.size() / d_payloadsize;
+    	long blocksAvailable = localQueue.size() / (d_payloadsize);
     	long blocksRetrieved;
     	int itemsreturned;
 
@@ -287,12 +294,27 @@ namespace gr {
     		blocksRetrieved = blocksAvailable;
 
     	// items returned is going to match the payload (actual data) of the number of blocks.
-    	itemsreturned = blocksRetrieved * (d_precompDataSize / d_itemsize);
+    	itemsreturned = blocksRetrieved * d_precompDataOverItemSize;
 
     	// We're going to have to read the data out in blocks, account for the header,
     	// then just move the data part into the out[] array.
     	int outIndex = 0;
     	int skippedPackets = 0;
+/*
+    	if (testCount == 0) {
+    		std::cout << "noutput_items=" << noutput_items << std::endl;
+    		std::cout << "bytesAvailable=" << bytesAvailable << std::endl;
+    		std::cout << "localQueue.size()=" << localQueue.size() << std::endl;
+    		std::cout << "blocksRequested=" << blocksRequested << std::endl;
+    		std::cout << "blocksRetrieved=" << blocksRetrieved << std::endl;
+    		std::cout << "itemsreturned=" << itemsreturned << std::endl;
+    	}
+    	else {
+    		if (testCount > 100)
+    			testCount = 0;
+    	}
+    	testCount++;
+*/
 
     	for (int curPacket=0;curPacket<blocksRetrieved;curPacket++) {
     		for (int curByte=0;curByte<d_payloadsize;curByte++) {
@@ -313,7 +335,7 @@ namespace gr {
         				skippedPackets += pktSeqNum - d_seq_num - 1;
         			}
         			else {
-        				// For now just let it go through.  Could be a rollover, but could also be a restart on the source.
+        				// For now just let it go through.  Roll-over is diff for CHDR versus others.
         				d_seq_num = pktSeqNum;
         			}
     			}
@@ -408,7 +430,7 @@ namespace gr {
     	// let's figure out how much we have in relation to noutput_items, accounting for headers
 
     	// Number of data-only blocks requested (set_output_multiple() should make sure this is an integer multiple)
-    	long blocksRequested = noutput_items / (d_precompDataSize / d_itemsize);
+    	long blocksRequested = noutput_items / d_precompDataOverItemSize;
     	// Number of blocks available accounting for the header as well.
     	long blocksAvailable = localQueue.size() / (d_payloadsize);
     	long blocksRetrieved;
@@ -420,7 +442,7 @@ namespace gr {
     		blocksRetrieved = blocksAvailable;
 
     	// items returned is going to match the payload (actual data) of the number of blocks.
-    	itemsreturned = blocksRetrieved * (d_precompDataSize / d_itemsize);
+    	itemsreturned = blocksRetrieved * d_precompDataOverItemSize;
 
     	// We're going to have to read the data out in blocks, account for the header,
     	// then just move the data part into the out[] array.
