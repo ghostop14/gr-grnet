@@ -4,7 +4,7 @@
   <key>grnet_udp_source</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
-  <make>grnet.udp_source($type.size, 1, $port,$header,$payloadsize,$notifyMissed,$sourceZeros)</make>
+  <make>grnet.udp_source($type.size, 1, $port,$header,$payloadsize,$notifyMissed,False)</make>
 	<param>
 		<name>Input Type</name>
 		<key>type</key>
@@ -84,19 +84,6 @@
 		<option>
 			<name>Yes</name>
 			<key>True</key>
-		</option>
-	</param>
-	<param>
-		<name>Source 0s When No Data</name>
-		<key>sourceZeros</key>
-		<type>enum</type>
-		<option>
-			<name>Yes</name>
-			<key>True</key>
-		</option>
-		<option>
-			<name>No</name>
-			<key>False</key>
 		</option>
 	</param>
 	<source>

@@ -46,12 +46,13 @@ namespace gr {
     {
     	d_block_size = d_itemsize * d_veclen;
     	d_port = port;
-    	d_header_size = 0;
     	d_seq_num = 0;
     	d_notifyMissed = notifyMissed;
     	d_sourceZeros = sourceZeros;
     	d_header_type = headerType;;
     	d_payloadsize = payloadsize;
+
+    	d_header_size = 0;
 
         switch (d_header_type) {
         	case HEADERTYPE_SEQNUM:
@@ -97,12 +98,21 @@ namespace gr {
         */
         d_endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port);
 
-		udpsocket = new boost::asio::ip::udp::socket(d_io_service,d_endpoint);
+        try {
+    		udpsocket = new boost::asio::ip::udp::socket(d_io_service,d_endpoint);
+        }
+    	catch(const std::exception& ex)
+    	{
+    	    std::cerr << "Error occurred: " << ex.what() << std::endl;
+    	    exit(1);
+    	}
 
 		int outMultiple = (d_payloadsize - d_header_size) / d_block_size;
 
 		if (outMultiple == 1)
 			outMultiple = 2;  // Ensure we get pairs, for instance complex -> ichar pairs
+
+		std::cout << "[UDP Source] Listening for data on UDP port " << port << "." << std::endl; //   Output multiple: " << outMultiple << "." << std::endl;
 
 		gr::block::set_output_multiple(outMultiple);
     }
@@ -209,6 +219,18 @@ namespace gr {
 
     	// quick exit if nothing to do
         if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
+        	static int underRunCounter = 0;
+
+        	if (underRunCounter == 0) {
+            	std::cout << "nU";
+        	}
+        	else {
+        		if (underRunCounter > 100)
+        			underRunCounter = 0;
+        	}
+
+        	underRunCounter++;
+
         	if (d_sourceZeros) {
             	// Just return 0's
             	memset((void *)out,0x00,numRequested);
@@ -255,7 +277,7 @@ namespace gr {
     	// Number of data-only blocks requested (set_output_multiple() should make sure this is an integer multiple)
     	long blocksRequested = noutput_items / (d_precompDataSize / d_itemsize);
     	// Number of blocks available accounting for the header as well.
-    	long blocksAvailable = localQueue.size() / (d_payloadsize / d_itemsize);
+    	long blocksAvailable = localQueue.size() / d_payloadsize;
     	long blocksRetrieved;
     	int itemsreturned;
 
@@ -291,7 +313,7 @@ namespace gr {
         				skippedPackets += pktSeqNum - d_seq_num - 1;
         			}
         			else {
-        				// For now just let it go through.  Roll-over is diff for CHDR versus others.
+        				// For now just let it go through.  Could be a rollover, but could also be a restart on the source.
         				d_seq_num = pktSeqNum;
         			}
     			}
@@ -317,13 +339,31 @@ namespace gr {
         gr_vector_void_star &output_items)
     {
         gr::thread::scoped_lock guard(d_mutex);
+/*
+    	static int testCount=0;
 
+    	if (testCount == 0) {
+    		std::cout << "Entering work" << std::endl;
+
+    	}
+*/
     	int bytesAvailable = netDataAvailable();
         unsigned char *out = (unsigned char *) output_items[0];
     	unsigned int numRequested = noutput_items * d_block_size;
 
     	// quick exit if nothing to do
         if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
+        	static int underRunCounter = 0;
+
+        	if (underRunCounter == 0) {
+            	std::cout << "nU";
+        	}
+        	else {
+        		if (underRunCounter > 100)
+        			underRunCounter = 0;
+        	}
+
+        	underRunCounter++;
         	if (d_sourceZeros) {
             	// Just return 0's
             	memset((void *)out,0x00,numRequested);
@@ -370,7 +410,7 @@ namespace gr {
     	// Number of data-only blocks requested (set_output_multiple() should make sure this is an integer multiple)
     	long blocksRequested = noutput_items / (d_precompDataSize / d_itemsize);
     	// Number of blocks available accounting for the header as well.
-    	long blocksAvailable = localQueue.size() / (d_payloadsize / d_itemsize);
+    	long blocksAvailable = localQueue.size() / (d_payloadsize);
     	long blocksRetrieved;
     	int itemsreturned;
 
@@ -386,6 +426,21 @@ namespace gr {
     	// then just move the data part into the out[] array.
     	int outIndex = 0;
     	int skippedPackets = 0;
+/*
+    	if (testCount == 0) {
+    		std::cout << "noutput_items=" << noutput_items << std::endl;
+    		std::cout << "bytesAvailable=" << bytesAvailable << std::endl;
+    		std::cout << "localQueue.size()=" << localQueue.size() << std::endl;
+    		std::cout << "blocksRequested=" << blocksRequested << std::endl;
+    		std::cout << "blocksRetrieved=" << blocksRetrieved << std::endl;
+    		std::cout << "itemsreturned=" << itemsreturned << std::endl;
+    	}
+    	else {
+    		if (testCount > 100)
+    			testCount = 0;
+    	}
+    	testCount++;
+*/
 
     	for (int curPacket=0;curPacket<blocksRetrieved;curPacket++) {
     		for (int curByte=0;curByte<d_payloadsize;curByte++) {
