@@ -72,6 +72,7 @@ namespace gr {
         	break;
 
         	case HEADERTYPE_NONE:
+        		d_header_size = 0;
         	break;
 
         	default:
@@ -164,22 +165,24 @@ namespace gr {
 
 
     uint64_t udp_source_impl::getHeaderSeqNum() {
-    	uint64_t retVal;
+    	uint64_t retVal = 0;
 
         switch (d_header_type) {
         	case HEADERTYPE_SEQNUM:
         	{
-        		HeaderSeqNum seqHeader;
-        		memcpy((void *)&seqHeader,(void *)localBuffer,d_header_size);
-        		retVal = seqHeader.seqnum;
+        		// HeaderSeqNum seqHeader;
+        		// memcpy((void *)&seqHeader,(void *)localBuffer,d_header_size);
+        		// retVal = seqHeader.seqnum;
+        		retVal = ((HeaderSeqNum *)localBuffer)->seqnum;
         	}
         	break;
 
         	case HEADERTYPE_SEQPLUSSIZE:
         	{
-        		HeaderSeqPlusSize seqHeaderPlusSize;
-        		memcpy((void *)&seqHeaderPlusSize,(void *)localBuffer,d_header_size);
-        		retVal = seqHeaderPlusSize.seqnum;
+        		// HeaderSeqPlusSize seqHeaderPlusSize;
+        		// memcpy((void *)&seqHeaderPlusSize,(void *)localBuffer,d_header_size);
+        		// retVal = seqHeaderPlusSize.seqnum;
+        		retVal = ((HeaderSeqPlusSize *)localBuffer)->seqnum;
         	}
         	break;
 
@@ -189,17 +192,19 @@ namespace gr {
         		if (d_seq_num > 0x0FFF)
         			d_seq_num = 1;
 
-        		CHDR chdr;
-           		memcpy((void *)&chdr,(void *)localBuffer,d_header_size);
-				retVal = chdr.seqPlusFlags & 0x0FFF;
+        		// CHDR chdr;
+           		// memcpy((void *)&chdr,(void *)localBuffer,d_header_size);
+				// retVal = chdr.seqPlusFlags & 0x0FFF;
+        		retVal = ((CHDR *)localBuffer)->seqPlusFlags & 0x0FFF;
         	}
         	break;
 
         	case HEADERTYPE_OLDATA:
         	{
-        		OldATAHeader ataHeader;
-        		memcpy((void *)&ataHeader,(void *)localBuffer,d_header_size);
-        		retVal = ataHeader.seq;
+        		// OldATAHeader ataHeader;
+        		// memcpy((void *)&ataHeader,(void *)localBuffer,d_header_size);
+        		// retVal = ataHeader.seq;
+        		retVal = ((OldATAHeader *)localBuffer)->seq;
         	}
         	break;
         }
@@ -213,24 +218,23 @@ namespace gr {
         gr_vector_void_star &output_items)
     {
         gr::thread::scoped_lock guard(d_mutex);
-/*
-    	static int testCount=0;
 
-    	if (testCount == 0) {
-    		std::cout << "Entering work" << std::endl;
+        static bool firstTime = true;
+        // static int testCount=0;
+    	static int underRunCounter = 0;
 
-    	}
-*/
     	int bytesAvailable = netDataAvailable();
         unsigned char *out = (unsigned char *) output_items[0];
     	unsigned int numRequested = noutput_items * d_block_size;
 
     	// quick exit if nothing to do
         if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
-        	static int underRunCounter = 0;
-
         	if (underRunCounter == 0) {
-            	std::cout << "nU";
+        		if (!firstTime) {
+                	std::cout << "nU";
+        		}
+        		else
+        			firstTime = false;
         	}
         	else {
         		if (underRunCounter > 100)
@@ -298,58 +302,67 @@ namespace gr {
 
     	// We're going to have to read the data out in blocks, account for the header,
     	// then just move the data part into the out[] array.
+
+    	unsigned char *pData;
+    	pData = &localBuffer[d_header_size];
     	int outIndex = 0;
     	int skippedPackets = 0;
-/*
-    	if (testCount == 0) {
-    		std::cout << "noutput_items=" << noutput_items << std::endl;
-    		std::cout << "bytesAvailable=" << bytesAvailable << std::endl;
-    		std::cout << "localQueue.size()=" << localQueue.size() << std::endl;
-    		std::cout << "blocksRequested=" << blocksRequested << std::endl;
-    		std::cout << "blocksRetrieved=" << blocksRetrieved << std::endl;
-    		std::cout << "itemsreturned=" << itemsreturned << std::endl;
-    	}
-    	else {
-    		if (testCount > 100)
-    			testCount = 0;
-    	}
-    	testCount++;
-*/
 
     	for (int curPacket=0;curPacket<blocksRetrieved;curPacket++) {
+    		// Move a packet to our local buffer
     		for (int curByte=0;curByte<d_payloadsize;curByte++) {
     			localBuffer[curByte] = localQueue.front();
         		localQueue.pop();
     		}
 
-    		int dataIndex = d_header_size;
-
-    		memcpy(&out[outIndex],&localBuffer[dataIndex],d_precompDataSize);
-    		outIndex += d_precompDataSize;
-
+    		// Interpret the header if present
     		if (d_header_type != HEADERTYPE_NONE) {
     			uint64_t pktSeqNum = getHeaderSeqNum();
 
-    			if (d_seq_num > 0) {
+    			if (d_seq_num > 0) { // d_seq_num will be 0 when this block starts
+    				/*
+        	    	if (testCount == 0) {
+        	    		std::cout << "packet header=" << pktSeqNum << std::endl;
+        	    		std::cout << "d_seq_num=" << d_seq_num << std::endl;
+        	    	}
+        	    	else {
+        	    		if (testCount > 10)
+        	    			testCount = 0;
+        	    		else
+                	    	testCount++;
+
+        	    	}
+					*/
         			if (pktSeqNum > d_seq_num) {
+        				// Ideally pktSeqNum = d_seq_num + 1.  Therefore this should do += 0 when no packets are dropped.
         				skippedPackets += pktSeqNum - d_seq_num - 1;
         			}
+        			/*
         			else {
-        				// For now just let it go through.  Roll-over is diff for CHDR versus others.
-        				d_seq_num = pktSeqNum;
+        				// May have rolled over or source started over.  Just reset internally.
         			}
+        			*/
+
+        			// Store as current for next pass.
+    				d_seq_num = pktSeqNum;
     			}
     			else {
     				// just starting.  Prime it for no loss on the first packet.
     				d_seq_num = pktSeqNum;
-
     			}
     		}
+
+    		// Move the data to the output buffer and increment the out index
+    		memcpy(&out[outIndex],pData,d_precompDataSize);
+    		outIndex = outIndex + d_precompDataSize;
+
     	}
 
     	if (skippedPackets > 0 && d_notifyMissed) {
-    		std::cout << "[UDP Sink:" << d_port << "] dropped packets: " << skippedPackets << std::endl;
+    		std::cout << "[UDP Sink:" << d_port << "] missed packets: " << skippedPackets << std::endl;
     	}
+
+    	// firstTime = false;
 
     	// If we had less data than requested, it'll be reflected in the return value.
         return itemsreturned;
@@ -361,24 +374,23 @@ namespace gr {
         gr_vector_void_star &output_items)
     {
         gr::thread::scoped_lock guard(d_mutex);
-/*
-    	static int testCount=0;
 
-    	if (testCount == 0) {
-    		std::cout << "Entering work" << std::endl;
+        static bool firstTime = true;
+        // static int testCount=0;
+    	static int underRunCounter = 0;
 
-    	}
-*/
     	int bytesAvailable = netDataAvailable();
         unsigned char *out = (unsigned char *) output_items[0];
     	unsigned int numRequested = noutput_items * d_block_size;
 
     	// quick exit if nothing to do
         if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
-        	static int underRunCounter = 0;
-
         	if (underRunCounter == 0) {
-            	std::cout << "nU";
+        		if (!firstTime) {
+                	std::cout << "nU";
+        		}
+        		else
+        			firstTime = false;
         	}
         	else {
         		if (underRunCounter > 100)
@@ -446,58 +458,67 @@ namespace gr {
 
     	// We're going to have to read the data out in blocks, account for the header,
     	// then just move the data part into the out[] array.
+
+    	unsigned char *pData;
+    	pData = &localBuffer[d_header_size];
     	int outIndex = 0;
     	int skippedPackets = 0;
-/*
-    	if (testCount == 0) {
-    		std::cout << "noutput_items=" << noutput_items << std::endl;
-    		std::cout << "bytesAvailable=" << bytesAvailable << std::endl;
-    		std::cout << "localQueue.size()=" << localQueue.size() << std::endl;
-    		std::cout << "blocksRequested=" << blocksRequested << std::endl;
-    		std::cout << "blocksRetrieved=" << blocksRetrieved << std::endl;
-    		std::cout << "itemsreturned=" << itemsreturned << std::endl;
-    	}
-    	else {
-    		if (testCount > 100)
-    			testCount = 0;
-    	}
-    	testCount++;
-*/
 
     	for (int curPacket=0;curPacket<blocksRetrieved;curPacket++) {
+    		// Move a packet to our local buffer
     		for (int curByte=0;curByte<d_payloadsize;curByte++) {
     			localBuffer[curByte] = localQueue.front();
         		localQueue.pop();
     		}
 
-    		int dataIndex = d_header_size;
-
-    		memcpy(&out[outIndex],&localBuffer[dataIndex],d_precompDataSize);
-    		outIndex += d_precompDataSize;
-
+    		// Interpret the header if present
     		if (d_header_type != HEADERTYPE_NONE) {
     			uint64_t pktSeqNum = getHeaderSeqNum();
 
-    			if (d_seq_num > 0) {
+    			if (d_seq_num > 0) { // d_seq_num will be 0 when this block starts
+    				/*
+        	    	if (testCount == 0) {
+        	    		std::cout << "packet header=" << pktSeqNum << std::endl;
+        	    		std::cout << "d_seq_num=" << d_seq_num << std::endl;
+        	    	}
+        	    	else {
+        	    		if (testCount > 10)
+        	    			testCount = 0;
+        	    		else
+                	    	testCount++;
+
+        	    	}
+					*/
         			if (pktSeqNum > d_seq_num) {
+        				// Ideally pktSeqNum = d_seq_num + 1.  Therefore this should do += 0 when no packets are dropped.
         				skippedPackets += pktSeqNum - d_seq_num - 1;
         			}
+        			/*
         			else {
-        				// For now just let it go through.  Roll-over is diff for CHDR versus others.
-        				d_seq_num = pktSeqNum;
+        				// May have rolled over or source started over.  Just reset internally.
         			}
+        			*/
+
+        			// Store as current for next pass.
+    				d_seq_num = pktSeqNum;
     			}
     			else {
     				// just starting.  Prime it for no loss on the first packet.
     				d_seq_num = pktSeqNum;
-
     			}
     		}
+
+    		// Move the data to the output buffer and increment the out index
+    		memcpy(&out[outIndex],pData,d_precompDataSize);
+    		outIndex = outIndex + d_precompDataSize;
+
     	}
 
     	if (skippedPackets > 0 && d_notifyMissed) {
-    		std::cout << "[UDP Sink:" << d_port << "] dropped packets: " << skippedPackets << std::endl;
+    		std::cout << "[UDP Sink:" << d_port << "] missed packets: " << skippedPackets << std::endl;
     	}
+
+    	// firstTime = false;
 
     	// If we had less data than requested, it'll be reflected in the return value.
         return itemsreturned;

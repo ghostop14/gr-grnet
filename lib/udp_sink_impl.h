@@ -45,6 +45,9 @@ namespace gr {
         uint64_t d_seq_num;
         bool b_send_eof;
 
+        int d_precompDataSize;
+        int d_precompDataOverItemSize;
+
         char tmpHeaderBuff[12];  // Largest header is 10 bytes so this should be big enough.
 
         std::queue<char> localQueue;

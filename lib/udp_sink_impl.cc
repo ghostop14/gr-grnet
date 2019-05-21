@@ -72,6 +72,7 @@ namespace gr {
         	break;
 
         	case HEADERTYPE_NONE:
+        		d_header_size = 0;
         	break;
 
         	default:
@@ -85,7 +86,12 @@ namespace gr {
   	      exit(1);
     	}
 
+    	d_seq_num = 0;
+
     	d_block_size = d_itemsize * d_veclen;
+
+    	d_precompDataSize = d_payloadsize - d_header_size;
+    	d_precompDataOverItemSize = d_precompDataSize / d_itemsize;
 
     	localBuffer = new unsigned char[d_payloadsize];
 
@@ -200,53 +206,36 @@ namespace gr {
         // Local boost buffer for transmitting
     	std::vector<boost::asio::const_buffer> transmitbuffer;
 
-    	while (!localQueue.empty()) {
+    	// Let's see how many blocks are in the buffer
+		int bytesAvailable = localQueue.size();
+    	long blocksAvailable = bytesAvailable / d_precompDataSize;
+
+    	for (int curBlock=0;curBlock<blocksAvailable;curBlock++) {
     		// Clear the next transmit buffer
     		transmitbuffer.clear();
-    		int bytesAvailable = localQueue.size();
-    		int bytesInBuffer = 0;
 
     		// build our next header if we need it
             if (d_header_type != HEADERTYPE_NONE) {
-            	if (d_seq_num == 0xFFFFFFFF)
-            		d_seq_num = 0;
-
-            	d_seq_num++;
-            	// want to send the header.
-            	tmpHeaderBuff[0]=tmpHeaderBuff[1]=tmpHeaderBuff[2]=tmpHeaderBuff[3]=0xFF;
-
-
-                memcpy((void *)&tmpHeaderBuff[4], (void *)&d_seq_num, sizeof(d_seq_num));
-
-                if ((d_header_type == HEADERTYPE_SEQPLUSSIZE)||(d_header_type == HEADERTYPE_SEQSIZECRC)) {
-                	// NOTE: Header size field includes the whole data block including the header.
-                	if (bytesAvailable >= d_payloadsize)
-                        memcpy((void *)&tmpHeaderBuff[8], (void *)&d_payloadsize, sizeof(d_payloadsize));
-                    else {
-                    	int newSize = bytesAvailable + d_header_size;
-                        memcpy((void *)&tmpHeaderBuff[8], (void *)&newSize, sizeof(newSize));
-                    }
-                }
+            	buildHeader();
 
                 transmitbuffer.push_back(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size));
-                bytesInBuffer = d_header_size;
             }
 
-            int bytesRemaining = d_payloadsize - bytesInBuffer;
-
-            if (bytesRemaining > bytesAvailable)
-            	bytesRemaining = bytesAvailable;
-
-            for (int i=0;i<bytesRemaining;i++) {
+            // Fill the data buffer
+            for (int i=0;i<d_precompDataSize;i++) {
             	localBuffer[i] = localQueue.front();
             	localQueue.pop();
             }
 
-        	transmitbuffer.push_back(boost::asio::buffer((const void *)localBuffer, bytesRemaining));
+            // Set up for transmit
+        	transmitbuffer.push_back(boost::asio::buffer((const void *)localBuffer, d_precompDataSize));
+
+        	// Send
             udpsocket->send_to(transmitbuffer,d_endpoint);
     	}
 
-        return noutput_items;
+    	int itemsreturned = blocksAvailable * d_precompDataOverItemSize;
+        return itemsreturned;
     }
 
     int
@@ -267,34 +256,36 @@ namespace gr {
         // Local boost buffer for transmitting
     	std::vector<boost::asio::const_buffer> transmitbuffer;
 
-    	while (!localQueue.empty()) {
+    	// Let's see how many blocks are in the buffer
+		int bytesAvailable = localQueue.size();
+    	long blocksAvailable = bytesAvailable / d_precompDataSize;
+
+    	for (int curBlock=0;curBlock<blocksAvailable;curBlock++) {
     		// Clear the next transmit buffer
     		transmitbuffer.clear();
-    		int bytesAvailable = localQueue.size();
-    		int bytesInBuffer = 0;
 
     		// build our next header if we need it
             if (d_header_type != HEADERTYPE_NONE) {
             	buildHeader();
+
                 transmitbuffer.push_back(boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size));
-                bytesInBuffer = d_header_size;
             }
 
-            int bytesRemaining = d_payloadsize - bytesInBuffer;
-
-            if (bytesRemaining > bytesAvailable)
-            	bytesRemaining = bytesAvailable;
-
-            for (int i=0;i<bytesRemaining;i++) {
+            // Fill the data buffer
+            for (int i=0;i<d_precompDataSize;i++) {
             	localBuffer[i] = localQueue.front();
             	localQueue.pop();
             }
 
-        	transmitbuffer.push_back(boost::asio::buffer((const void *)localBuffer, bytesRemaining));
+            // Set up for transmit
+        	transmitbuffer.push_back(boost::asio::buffer((const void *)localBuffer, d_precompDataSize));
+
+        	// Send
             udpsocket->send_to(transmitbuffer,d_endpoint);
     	}
 
-        return noutput_items;
+    	int itemsreturned = blocksAvailable * d_precompDataOverItemSize;
+        return itemsreturned;
     }
   } /* namespace grnet */
 } /* namespace gr */
