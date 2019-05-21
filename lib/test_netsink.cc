@@ -16,6 +16,7 @@
 #include <gnuradio/unittests.h>
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #include <chrono>
 #include <boost/algorithm/string/replace.hpp>
@@ -24,6 +25,23 @@
 #include "udp_sink_impl.h"
 
 using namespace gr::grnet;
+
+// For comma-separated output (#include <iomanip> and the local along with this class takes care of it
+
+class comma_numpunct : public std::numpunct<char>
+{
+  protected:
+    virtual char do_thousands_sep() const
+    {
+        return ',';
+    }
+
+    virtual std::string do_grouping() const
+    {
+        return "\03";
+    }
+};
+
 
 int
 main (int argc, char **argv)
@@ -76,6 +94,12 @@ main (int argc, char **argv)
 
 	int vecLen=64;
 	std::cout << "Testing netsink.  Sending test data to " << host << ":" << port << std::endl;
+
+	// Add comma's to numbers
+	 std::locale comma_locale(std::locale(), new comma_numpunct());
+
+	    // tell cout to use our new locale.
+	 std::cout.imbue(comma_locale);
 
 	tcp_sink_impl *testTCP=NULL;
 	udp_sink_impl *testUDP=NULL;
@@ -130,7 +154,7 @@ main (int argc, char **argv)
 	throughput_original = localblocksize / elapsed_time;
 
 	std::cout << "Code Run Time:   " << std::fixed << std::setw(11)
-    << std::setprecision(6) << elapsed_time << " s  (" << throughput_original << " Bps)" << std::endl;
+    << std::setprecision(2) << elapsed_time << " s  (" << throughput_original << " Bps, " << (throughput_original*8)<< " bps)" << std::endl;
 
 	if (useTCP)
 		delete testTCP;
