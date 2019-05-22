@@ -49,7 +49,7 @@ if(NOT grnet_sources)
 endif(NOT grnet_sources)
 
 add_library(gnuradio-grnet SHARED ${grnet_sources})
-target_link_libraries(gnuradio-grnet ${Boost_LIBRARIES} ${GNURADIO_ALL_LIBRARIES} z thrift volk pcap)
+target_link_libraries(gnuradio-grnet ${Boost_LIBRARIES} ${GNURADIO_ALL_LIBRARIES} z volk pcap)
 set_target_properties(gnuradio-grnet PROPERTIES DEFINE_SYMBOL "gnuradio_grnet_EXPORTS")
 
 if(APPLE)
@@ -85,7 +85,6 @@ target_link_libraries(
   ${Boost_LIBRARIES}
   ${CPPUNIT_LIBRARIES}
   gnuradio-grnet
-  thrift
   volk
 )
 
