@@ -110,7 +110,6 @@ target_link_libraries(
   pthread
   z
   gnuradio-grnet
-  thrift
   volk
 )
 
@@ -136,7 +135,6 @@ target_link_libraries(
   pthread
   z
   gnuradio-grnet
-  thrift
   volk
 )
 
