@@ -867,7 +867,7 @@ namespace gr {
 				std::cerr << "[PCAP UDP Source] End of file reached and no matching packets.  Do you have the right port number?" << std::endl;
 			}
 
-			while (!stopThread && netQueue.size() > d_payloadsize) {
+			while (!stopThread && netDataAvailable() > d_payloadsize) {
 				// Just in case we're running fast, let the system catch up.
 				usleep(100);
 			}
@@ -944,7 +944,10 @@ namespace gr {
 
    size_t PCAPUDPSource_impl::netDataAvailable() {
     	// Get amount of data available
-    	return netQueue.size();
+	   gr::thread::scoped_lock guard(d_netQueueMutex);
+    	size_t size = netQueue.size();
+
+    	return size;
     }
 
    uint64_t PCAPUDPSource_impl::getHeaderSeqNum() {
