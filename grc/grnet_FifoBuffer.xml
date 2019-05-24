@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<block>
+  <name>FIFO Buffer</name>
+  <key>grnet_FifoBuffer</key>
+  <category>[GrNet Networking Tools]</category>
+  <import>import grnet</import>
+  <make>grnet.FifoBuffer($type.size, $minQueueLength)</make>
+	<param>
+		<name>Input Type</name>
+		<key>type</key>
+		<type>enum</type>
+		<option>
+			<name>Complex</name>
+			<key>complex</key>
+			<opt>size:gr.sizeof_gr_complex</opt>
+		</option>
+		<option>
+			<name>Float</name>
+			<key>float</key>
+			<opt>size:gr.sizeof_float</opt>
+		</option>
+	</param>
+	<param>
+		<name>Init Min Size</name>
+		<key>minQueueLength</key>
+		<value>24000</value>
+		<type>int</type>
+	</param>
+	<sink>
+		<name>in</name>
+		<type>$type</type>
+	</sink>
+	<source>
+		<name>out</name>
+		<type>$type</type>
+	</source>
+	<doc>
+	This block provides some initial buffering before starting to transmit output data.  This can be helpful for instance with an audio sink where underruns can cause issues.  This block can ensure there's enough data by queueing up some samples ahead of time before starting to transmit.
+	
+	NOTE: The buffer will output zeros until enough data is available.
+	
+	</doc>
+</block>

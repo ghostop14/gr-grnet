@@ -40,6 +40,11 @@ list(APPEND grnet_sources
     udp_sink_impl.cc
     udp_source_impl.cc
     PCAPUDPSource_impl.cc
+    ComplexToSigned8_impl.cc
+    Signed8ToComplex_impl.cc
+    ComplexToInt16Bytes_impl.cc
+    Int16BytesToComplex_impl.cc
+    FifoBuffer_impl.cc
 )
 
 set(grnet_sources "${grnet_sources}" PARENT_SCOPE)

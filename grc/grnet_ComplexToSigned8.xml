@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<block>
+  <name>ComplexToSigned8</name>
+  <key>grnet_ComplexToSigned8</key>
+  <category>[GrNet Networking Tools]</category>
+  <import>import grnet</import>
+  <make>grnet.ComplexToSigned8()</make>
+  <sink>
+    <name>in</name>
+    <type>complex</type>
+  </sink>
+  <source>
+    <name>out</name>
+    <type>byte</type>
+  </source>
+</block>

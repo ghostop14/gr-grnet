@@ -13,6 +13,11 @@
 #include "grnet/udp_sink.h"
 #include "grnet/udp_source.h"
 #include "grnet/PCAPUDPSource.h"
+#include "grnet/ComplexToSigned8.h"
+#include "grnet/Signed8ToComplex.h"
+#include "grnet/ComplexToInt16Bytes.h"
+#include "grnet/Int16BytesToComplex.h"
+#include "grnet/FifoBuffer.h"
 %}
 
 
@@ -29,3 +34,13 @@ GR_SWIG_BLOCK_MAGIC2(grnet, udp_sink);
 GR_SWIG_BLOCK_MAGIC2(grnet, udp_source);
 %include "grnet/PCAPUDPSource.h"
 GR_SWIG_BLOCK_MAGIC2(grnet, PCAPUDPSource);
+%include "grnet/ComplexToSigned8.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, ComplexToSigned8);
+%include "grnet/Signed8ToComplex.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, Signed8ToComplex);
+%include "grnet/ComplexToInt16Bytes.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, ComplexToInt16Bytes);
+%include "grnet/Int16BytesToComplex.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, Int16BytesToComplex);
+%include "grnet/FifoBuffer.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, FifoBuffer);

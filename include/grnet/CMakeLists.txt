@@ -26,5 +26,10 @@ install(FILES
     udp_sink.h 
     tcp_source.h 
     udp_source.h
-    PCAPUDPSource.h DESTINATION include/grnet
+    PCAPUDPSource.h
+    ComplexToSigned8.h
+    Signed8ToComplex.h
+    ComplexToInt16Bytes.h
+    Int16BytesToComplex.h
+    FifoBuffer.h DESTINATION include/grnet
 )
