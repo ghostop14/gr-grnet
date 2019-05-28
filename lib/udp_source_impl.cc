@@ -91,7 +91,19 @@ namespace gr {
     	d_precompDataOverItemSize = d_precompDataSize / d_itemsize;
 
     	localBuffer = new unsigned char[d_payloadsize];
-    	long maxCircBuffer = d_payloadsize * 4000;
+    	long maxCircBuffer;
+
+    	// Let's keep it from getting too big
+    	if (d_payloadsize < 2000) {
+    		maxCircBuffer = d_payloadsize * 4000;
+    	}
+    	else {
+        	if (d_payloadsize < 5000)
+        		maxCircBuffer = d_payloadsize * 2000;
+        	else
+        		maxCircBuffer = d_payloadsize * 1000;
+    	}
+
     	localQueue = new boost::circular_buffer<unsigned char>(maxCircBuffer);
 
    	/*
