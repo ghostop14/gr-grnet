@@ -372,7 +372,7 @@ namespace gr {
     	}
 
     	if (skippedPackets > 0 && d_notifyMissed) {
-    		std::cout << "[UDP Sink:" << d_port << "] missed  packets: " << skippedPackets << std::endl;
+    		std::cout << "[UDP source:" << d_port << "] missed  packets: " << skippedPackets << std::endl;
     	}
 
     	// firstTime = false;
