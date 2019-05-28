@@ -24,7 +24,8 @@
 #include <grnet/udp_source.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <queue>
+// #include <queue>
+#include <boost/circular_buffer.hpp>
 
 #include "packet_headers.h"
 
@@ -58,7 +59,8 @@ namespace gr {
         boost::asio::ip::udp::socket *udpsocket;
 
         boost::asio::streambuf read_buffer;
-    	std::queue<unsigned char> localQueue;
+    	// std::queue<unsigned char> localQueue;
+    	boost::circular_buffer<unsigned char> *localQueue;
 
         boost::mutex d_mutex;
 

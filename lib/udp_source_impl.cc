@@ -91,6 +91,8 @@ namespace gr {
     	d_precompDataOverItemSize = d_precompDataSize / d_itemsize;
 
     	localBuffer = new unsigned char[d_payloadsize];
+    	long maxCircBuffer = d_payloadsize * 4000;
+    	localQueue = new boost::circular_buffer<unsigned char>(maxCircBuffer);
 
    	/*
         std::string s__port = (boost::format("%d") % port).str();
@@ -154,6 +156,10 @@ namespace gr {
         	localBuffer = NULL;
         }
 
+        if (localQueue) {
+        	delete localQueue;
+        	localQueue = NULL;
+        }
         return true;
     }
 
@@ -163,7 +169,7 @@ namespace gr {
     	udpsocket->io_control(command);
     	size_t bytes_readable = command.get();
 
-    	return (bytes_readable+localQueue.size());
+    	return (bytes_readable+localQueue->size());
     }
 
     size_t udp_source_impl::netDataAvailable() {
@@ -240,163 +246,7 @@ namespace gr {
     	unsigned int numRequested = noutput_items * d_block_size;
 
     	// quick exit if nothing to do
-        if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
-        	if (underRunCounter == 0) {
-        		if (!firstTime) {
-                	std::cout << "nU";
-        		}
-        		else
-        			firstTime = false;
-        	}
-        	else {
-        		if (underRunCounter > 10)
-        			underRunCounter = 0;
-        	}
-
-        	underRunCounter++;
-        	if (d_sourceZeros) {
-            	// Just return 0's
-            	memset((void *)out,0x00,numRequested);
-            	return noutput_items;
-        	}
-        	else {
-        		return 0;
-        	}
-        }
-
-    	int bytesRead;
-    	int localNumItems;
-
-    	// we could get here even if no data was received but there's still data in the queue.
-    	// however read blocks so we want to make sure we have data before we call it.
-    	if (bytesAvailable > 0) {
-            boost::asio::streambuf::mutable_buffers_type buf = read_buffer.prepare(bytesAvailable);
-        	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
-            bytesRead = udpsocket->receive_from(buf,d_endpoint);
-
-            if (bytesRead > 0) {
-                read_buffer.commit(bytesRead);
-
-                // Get the data and add it to our local queue.  We have to maintain a local queue
-                // in case we read more bytes than noutput_items is asking for.  In that case
-                // we'll only return noutput_items bytes
-                const char *readData = boost::asio::buffer_cast<const char*>( read_buffer.data());
-                for (int i=0;i<bytesRead;i++) {
-                	localQueue.push(readData[i]);
-                }
-            	read_buffer.consume(bytesRead);
-            }
-    	}
-
-    	if (localQueue.size() < d_payloadsize) {
-    		// we don't have sufficient data for a block yet.
-    		return 0; // Don't memset 0x00 since we're starting to get data.  In this case we'll hold for the rest.
-    	}
-
-    	// Now if we're here we should have at least 1 block.
-
-    	// let's figure out how much we have in relation to noutput_items, accounting for headers
-
-    	// Number of data-only blocks requested (set_output_multiple() should make sure this is an integer multiple)
-    	long blocksRequested = noutput_items / d_precompDataOverItemSize;
-    	// Number of blocks available accounting for the header as well.
-    	long blocksAvailable = localQueue.size() / (d_payloadsize);
-    	long blocksRetrieved;
-    	int itemsreturned;
-
-    	if (blocksRequested <= blocksAvailable)
-    		blocksRetrieved = blocksRequested;
-    	else
-    		blocksRetrieved = blocksAvailable;
-
-    	// items returned is going to match the payload (actual data) of the number of blocks.
-    	itemsreturned = blocksRetrieved * d_precompDataOverItemSize;
-
-    	// We're going to have to read the data out in blocks, account for the header,
-    	// then just move the data part into the out[] array.
-
-    	unsigned char *pData;
-    	pData = &localBuffer[d_header_size];
-    	int outIndex = 0;
-    	int skippedPackets = 0;
-
-    	for (int curPacket=0;curPacket<blocksRetrieved;curPacket++) {
-    		// Move a packet to our local buffer
-    		for (int curByte=0;curByte<d_payloadsize;curByte++) {
-    			localBuffer[curByte] = localQueue.front();
-        		localQueue.pop();
-    		}
-
-    		// Interpret the header if present
-    		if (d_header_type != HEADERTYPE_NONE) {
-    			uint64_t pktSeqNum = getHeaderSeqNum();
-
-    			if (d_seq_num > 0) { // d_seq_num will be 0 when this block starts
-    				/*
-        	    	if (testCount == 0) {
-        	    		std::cout << "packet header=" << pktSeqNum << std::endl;
-        	    		std::cout << "d_seq_num=" << d_seq_num << std::endl;
-        	    	}
-        	    	else {
-        	    		if (testCount > 10)
-        	    			testCount = 0;
-        	    		else
-                	    	testCount++;
-
-        	    	}
-					*/
-        			if (pktSeqNum > d_seq_num) {
-        				// Ideally pktSeqNum = d_seq_num + 1.  Therefore this should do += 0 when no packets are dropped.
-        				skippedPackets += pktSeqNum - d_seq_num - 1;
-        			}
-        			/*
-        			else {
-        				// May have rolled over or source started over.  Just reset internally.
-        			}
-        			*/
-
-        			// Store as current for next pass.
-    				d_seq_num = pktSeqNum;
-    			}
-    			else {
-    				// just starting.  Prime it for no loss on the first packet.
-    				d_seq_num = pktSeqNum;
-    			}
-    		}
-
-    		// Move the data to the output buffer and increment the out index
-    		memcpy(&out[outIndex],pData,d_precompDataSize);
-    		outIndex = outIndex + d_precompDataSize;
-
-    	}
-
-    	if (skippedPackets > 0 && d_notifyMissed) {
-    		std::cout << "[UDP Sink:" << d_port << "] missed packets: " << skippedPackets << std::endl;
-    	}
-
-    	// firstTime = false;
-
-    	// If we had less data than requested, it'll be reflected in the return value.
-        return itemsreturned;
-    }
-
-    int
-    udp_source_impl::work(int noutput_items,
-        gr_vector_const_void_star &input_items,
-        gr_vector_void_star &output_items)
-    {
-        gr::thread::scoped_lock guard(d_mutex);
-
-        static bool firstTime = true;
-        // static int testCount=0;
-    	static int underRunCounter = 0;
-
-    	int bytesAvailable = netDataAvailable();
-        unsigned char *out = (unsigned char *) output_items[0];
-    	unsigned int numRequested = noutput_items * d_block_size;
-
-    	// quick exit if nothing to do
-        if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
+        if ((bytesAvailable == 0) && (localQueue->size() == 0)) {
         	if (underRunCounter == 0) {
         		if (!firstTime) {
                 	std::cout << "nU";
@@ -438,13 +288,13 @@ namespace gr {
                 // we'll only return noutput_items bytes
                 const char *readData = boost::asio::buffer_cast<const char*>( read_buffer.data());
                 for (int i=0;i<bytesRead;i++) {
-                	localQueue.push(readData[i]);
+                	localQueue->push_back(readData[i]);
                 }
             	read_buffer.consume(bytesRead);
             }
     	}
 
-    	if (localQueue.size() < d_payloadsize) {
+    	if (localQueue->size() < d_payloadsize) {
     		// we don't have sufficient data for a block yet.
     		return 0; // Don't memset 0x00 since we're starting to get data.  In this case we'll hold for the rest.
     	}
@@ -456,7 +306,7 @@ namespace gr {
     	// Number of data-only blocks requested (set_output_multiple() should make sure this is an integer multiple)
     	long blocksRequested = noutput_items / d_precompDataOverItemSize;
     	// Number of blocks available accounting for the header as well.
-    	long blocksAvailable = localQueue.size() / (d_payloadsize);
+    	long blocksAvailable = localQueue->size() / (d_payloadsize);
     	long blocksRetrieved;
     	int itemsreturned;
 
@@ -479,8 +329,148 @@ namespace gr {
     	for (int curPacket=0;curPacket<blocksRetrieved;curPacket++) {
     		// Move a packet to our local buffer
     		for (int curByte=0;curByte<d_payloadsize;curByte++) {
-    			localBuffer[curByte] = localQueue.front();
-        		localQueue.pop();
+    			localBuffer[curByte] = localQueue->at(0); // localQueue.front();
+        		// localQueue.pop();
+    			localQueue->pop_front();
+    		}
+
+    		// Interpret the header if present
+    		if (d_header_type != HEADERTYPE_NONE) {
+    			uint64_t pktSeqNum = getHeaderSeqNum();
+
+    			if (d_seq_num > 0) { // d_seq_num will be 0 when this block starts
+        			if (pktSeqNum > d_seq_num) {
+        				// Ideally pktSeqNum = d_seq_num + 1.  Therefore this should do += 0 when no packets are dropped.
+        				skippedPackets += pktSeqNum - d_seq_num - 1;
+        			}
+
+        			// Store as current for next pass.
+    				d_seq_num = pktSeqNum;
+    			}
+    			else {
+    				// just starting.  Prime it for no loss on the first packet.
+    				d_seq_num = pktSeqNum;
+    			}
+    		}
+
+    		// Move the data to the output buffer and increment the out index
+    		memcpy(&out[outIndex],pData,d_precompDataSize);
+    		outIndex = outIndex + d_precompDataSize;
+
+    	}
+
+    	if (skippedPackets > 0 && d_notifyMissed) {
+    		std::cout << "[UDP Sink:" << d_port << "] missed  packets: " << skippedPackets << std::endl;
+    	}
+
+    	// firstTime = false;
+
+    	// If we had less data than requested, it'll be reflected in the return value.
+        return itemsreturned;
+    }
+
+    int
+    udp_source_impl::work(int noutput_items,
+        gr_vector_const_void_star &input_items,
+        gr_vector_void_star &output_items)
+    {
+        gr::thread::scoped_lock guard(d_mutex);
+
+        static bool firstTime = true;
+        // static int testCount=0;
+    	static int underRunCounter = 0;
+
+    	int bytesAvailable = netDataAvailable();
+        unsigned char *out = (unsigned char *) output_items[0];
+    	unsigned int numRequested = noutput_items * d_block_size;
+
+    	// quick exit if nothing to do
+        if ((bytesAvailable == 0) && (localQueue->size() == 0)) {
+        	if (underRunCounter == 0) {
+        		if (!firstTime) {
+                	std::cout << "nU";
+        		}
+        		else
+        			firstTime = false;
+        	}
+        	else {
+        		if (underRunCounter > 100)
+        			underRunCounter = 0;
+        	}
+
+        	underRunCounter++;
+        	if (d_sourceZeros) {
+            	// Just return 0's
+            	memset((void *)out,0x00,numRequested);
+            	return noutput_items;
+        	}
+        	else {
+        		return 0;
+        	}
+        }
+
+    	int bytesRead;
+    	int localNumItems;
+
+    	// we could get here even if no data was received but there's still data in the queue.
+    	// however read blocks so we want to make sure we have data before we call it.
+    	if (bytesAvailable > 0) {
+            boost::asio::streambuf::mutable_buffers_type buf = read_buffer.prepare(bytesAvailable);
+        	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
+            bytesRead = udpsocket->receive_from(buf,d_endpoint);
+
+            if (bytesRead > 0) {
+                read_buffer.commit(bytesRead);
+
+                // Get the data and add it to our local queue.  We have to maintain a local queue
+                // in case we read more bytes than noutput_items is asking for.  In that case
+                // we'll only return noutput_items bytes
+                const char *readData = boost::asio::buffer_cast<const char*>( read_buffer.data());
+                for (int i=0;i<bytesRead;i++) {
+                	localQueue->push_back(readData[i]);
+                }
+            	read_buffer.consume(bytesRead);
+            }
+    	}
+
+    	if (localQueue->size() < d_payloadsize) {
+    		// we don't have sufficient data for a block yet.
+    		return 0; // Don't memset 0x00 since we're starting to get data.  In this case we'll hold for the rest.
+    	}
+
+    	// Now if we're here we should have at least 1 block.
+
+    	// let's figure out how much we have in relation to noutput_items, accounting for headers
+
+    	// Number of data-only blocks requested (set_output_multiple() should make sure this is an integer multiple)
+    	long blocksRequested = noutput_items / d_precompDataOverItemSize;
+    	// Number of blocks available accounting for the header as well.
+    	long blocksAvailable = localQueue->size() / (d_payloadsize);
+    	long blocksRetrieved;
+    	int itemsreturned;
+
+    	if (blocksRequested <= blocksAvailable)
+    		blocksRetrieved = blocksRequested;
+    	else
+    		blocksRetrieved = blocksAvailable;
+
+    	// items returned is going to match the payload (actual data) of the number of blocks.
+    	itemsreturned = blocksRetrieved * d_precompDataOverItemSize;
+
+    	// We're going to have to read the data out in blocks, account for the header,
+    	// then just move the data part into the out[] array.
+
+    	unsigned char *pData;
+    	pData = &localBuffer[d_header_size];
+    	int outIndex = 0;
+    	int skippedPackets = 0;
+
+    	for (int curPacket=0;curPacket<blocksRetrieved;curPacket++) {
+    		// Move a packet to our local buffer
+    		for (int curByte=0;curByte<d_payloadsize;curByte++) {
+    			localBuffer[curByte] = localQueue->at(0); // localQueue.front();
+        		// localQueue.pop();
+    			localQueue->pop_front();
     		}
 
     		// Interpret the header if present
