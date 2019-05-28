@@ -101,7 +101,7 @@ namespace gr {
         	if (d_payloadsize < 5000)
         		maxCircBuffer = d_payloadsize * 2000;
         	else
-        		maxCircBuffer = d_payloadsize * 1000;
+        		maxCircBuffer = d_payloadsize * 1500;
     	}
 
     	localQueue = new boost::circular_buffer<unsigned char>(maxCircBuffer);
