@@ -13,4 +13,7 @@
     <name>out</name>
     <type>complex</type>
   </source>
+  <doc>
+  This block will convert incoming BYTES, for instance from a file source or network source providing bytes to complex where the incoming bytes represent int16 interleaved complex data.
+  </doc>
 </block>

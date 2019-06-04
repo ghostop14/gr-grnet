@@ -13,4 +13,7 @@
     <name>out</name>
     <type>byte</type>
   </source>
+  <doc>
+  This block will convert incoming complex data to bytes in an int16 interleaved complex format.  This block is the mirror image of int16BytesToComplex and can be used with file or network blocks to send/store and receive/read in int16 formats,
+  </doc>
 </block>
