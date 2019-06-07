@@ -250,9 +250,13 @@ namespace gr {
         // boost::asio::write(*tcpsocket, boost::asio::buffer(d_buf.get(), data_len),ec);
     	ec.clear();
 
+    	char *pBuff;
+    	pBuff = (char *) input_items[0];
+
     	while ((bytesRemaining > 0) && (!ec)) {
-            bytesWritten = boost::asio::write(*tcpsocket, boost::asio::buffer((const void *)in, noi),ec);
+            bytesWritten = boost::asio::write(*tcpsocket, boost::asio::buffer((const void *)pBuff, bytesRemaining),ec);
             bytesRemaining -= bytesWritten;
+            pBuff += bytesWritten;
 
             if (ec == boost::asio::error::connection_reset || ec == boost::asio::error::broken_pipe) {
                 // see http://stackoverflow.com/questions/3857272/boost-error-codes-reference for boost error codes
