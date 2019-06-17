@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <block>
-  <name>ComplexToInt16Bytes</name>
+  <name>Complex To Int16 Bytes</name>
   <key>grnet_ComplexToInt16Bytes</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>

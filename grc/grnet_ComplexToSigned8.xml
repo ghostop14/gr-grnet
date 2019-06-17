@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <block>
-  <name>ComplexToSigned8</name>
+  <name>Complex To Signed8</name>
   <key>grnet_ComplexToSigned8</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
