@@ -27,5 +27,8 @@ install(FILES
     grnet_Signed8ToComplex.xml
     grnet_ComplexToInt16Bytes.xml
     grnet_Int16BytesToComplex.xml
-    grnet_FifoBuffer.xml DESTINATION share/gnuradio/grc/blocks
+    grnet_FifoBuffer.xml
+    grnet_SC16ToBytes.xml
+    grnet_BytesToSC16.xml
+    grnet_ByteComplexDecimator.xml DESTINATION share/gnuradio/grc/blocks
 )

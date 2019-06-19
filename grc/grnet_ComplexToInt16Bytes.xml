@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <block>
-  <name>Complex To Int16 Bytes</name>
+  <name>Complex To SC16 Bytes</name>
   <key>grnet_ComplexToInt16Bytes</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
@@ -14,6 +14,6 @@
     <type>byte</type>
   </source>
   <doc>
-  This block will convert incoming complex data to bytes in an int16 interleaved complex format.  This block is the mirror image of int16BytesToComplex and can be used with file or network blocks to send/store and receive/read in int16 formats,
+  This block will convert incoming complex float (fc32) to bytes in a signed complex 16 (SC16) stream of bytes.  This block is the mirror image of SC16 Bytes To Complex and can be used with file or network blocks to send/store and receive/read in SC16 formats,
   </doc>
 </block>

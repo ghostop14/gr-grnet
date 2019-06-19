@@ -31,5 +31,8 @@ install(FILES
     Signed8ToComplex.h
     ComplexToInt16Bytes.h
     Int16BytesToComplex.h
-    FifoBuffer.h DESTINATION include/grnet
+    FifoBuffer.h
+    SC16ToBytes.h
+    BytesToSC16.h
+    ByteComplexDecimator.h DESTINATION include/grnet
 )

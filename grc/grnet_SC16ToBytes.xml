@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<block>
+  <name>SC16 To Byte Stream</name>
+  <key>grnet_SC16ToBytes</key>
+  <category>[GrNet Networking Tools]</category>
+  <import>import grnet</import>
+  <make>grnet.SC16ToBytes()</make>
+  <sink>
+    <name>in</name>
+    <type>sc16</type>
+  </sink>
+  <source>
+    <name>out</name>
+    <type>byte</type>
+  </source>
+  <doc>
+  This block will convert incoming signed complex SC16 samples to a byte stream, say for transmission or saving to a file.  This block pairs will with a USRP source set to output Complex Int16.
+  </doc>
+</block>

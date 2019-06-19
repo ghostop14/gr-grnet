@@ -18,6 +18,9 @@
 #include "grnet/ComplexToInt16Bytes.h"
 #include "grnet/Int16BytesToComplex.h"
 #include "grnet/FifoBuffer.h"
+#include "grnet/SC16ToBytes.h"
+#include "grnet/BytesToSC16.h"
+#include "grnet/ByteComplexDecimator.h"
 %}
 
 
@@ -44,3 +47,9 @@ GR_SWIG_BLOCK_MAGIC2(grnet, ComplexToInt16Bytes);
 GR_SWIG_BLOCK_MAGIC2(grnet, Int16BytesToComplex);
 %include "grnet/FifoBuffer.h"
 GR_SWIG_BLOCK_MAGIC2(grnet, FifoBuffer);
+%include "grnet/SC16ToBytes.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, SC16ToBytes);
+%include "grnet/BytesToSC16.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, BytesToSC16);
+%include "grnet/ByteComplexDecimator.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, ByteComplexDecimator);
