@@ -727,7 +727,7 @@ namespace gr {
     	  out[octr] = in[i];
     	  out[octr+1] = in[i+1];
 
-    	  i+= decimation();
+    	  i+= d_doubledecimation;
     	  octr+=2;
       }
 
