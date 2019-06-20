@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <block>
-  <name>Complex To Signed8</name>
+  <name>Complex To Scaled Signed8</name>
   <key>grnet_ComplexToSigned8</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
@@ -13,4 +13,12 @@
     <name>out</name>
     <type>byte</type>
   </source>
+  <doc>
+  This block incorporates an SCHAR_MAX scaling factor into the conversion, generally creating a -1 to 1 scale.
+  
+  For comparison:
+  Complex -> IChar uses a lrintf() function to convert fc32->S8
+  This block converts using out = in * SCHAR_MAX
+  
+  </doc>
 </block>

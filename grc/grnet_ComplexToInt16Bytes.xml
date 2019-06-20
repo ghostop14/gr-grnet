@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <block>
-  <name>Complex To SC16 Bytes</name>
+  <name>Complex To Scaled SC16 Bytes</name>
   <key>grnet_ComplexToInt16Bytes</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
@@ -14,6 +14,10 @@
     <type>byte</type>
   </source>
   <doc>
-  This block will convert incoming complex float (fc32) to bytes in a signed complex 16 (SC16) stream of bytes.  This block is the mirror image of SC16 Bytes To Complex and can be used with file or network blocks to send/store and receive/read in SC16 formats,
+  This block incorporates an SHRT_MAX scaling factor into the conversion, generally creating a -1 to 1 scale.
+  
+  For comparison:
+  Complex to IShort uses a lrintf() function to convert fc32->S16
+  This block converts using out = in * SHRT_MAX
   </doc>
 </block>

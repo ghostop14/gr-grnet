@@ -719,7 +719,7 @@ namespace gr {
         int16_t *out = (int16_t *) output_items[0];
 
         for (int i=0;i<noutput_items;i++) {
-      	  *out++ = (int16_t)(*in++ * (float)SHRT_MAX);
+      	  *out++ = (int16_t)lrintf(*in++ * (float)SHRT_MAX);
         }
 
         // Tell runtime system how many output items we produced.

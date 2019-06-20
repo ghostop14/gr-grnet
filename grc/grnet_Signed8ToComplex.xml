@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <block>
-  <name>Signed8 To Complex</name>
+  <name>Scaled Signed8 To Complex</name>
   <key>grnet_Signed8ToComplex</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
@@ -13,4 +13,11 @@
     <name>out</name>
     <type>complex</type>
   </source>
+  <doc>
+  This block incorporates an SCHAR_MAX scaling factor into the conversion. This is generally useful for inputs such as raw HackRF files where the input bytes represent a -1 to 1.0 scale.
+  
+  For comparison:
+  IChar to Complex uses a out = (float)in
+  This block converts using out = (float)in / (float)SCHAR_MAX
+  </doc>
 </block>

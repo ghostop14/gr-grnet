@@ -719,7 +719,7 @@ namespace gr {
       signed char *out = (signed char *) output_items[0];
 
       for (int i=0;i<noutput_items;i++) {
-    	  *out++ = (signed char)(*in++ * (float)SCHAR_MAX);
+    	  *out++ = (signed char)lrintf(*in++ * (float)SCHAR_MAX);
       }
 
       // Tell runtime system how many output items we produced.
