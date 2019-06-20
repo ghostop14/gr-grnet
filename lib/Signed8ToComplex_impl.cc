@@ -717,8 +717,9 @@ namespace gr {
     {
       const signed char *in = (const signed char *) input_items[0];
       float *out = (float *) output_items[0];
+      long incomingBytes = noutput_items*2; // Each is a double pair
 
-      for (int i=0;i<noutput_items;i++) {
+      for (int i=0;i<incomingBytes;i++) {
 			*out++ = ((float)(*in++))/(float)SCHAR_MAX;
       }
 

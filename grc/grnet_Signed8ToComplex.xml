@@ -14,7 +14,7 @@
     <type>complex</type>
   </source>
   <doc>
-  This block incorporates an SCHAR_MAX scaling factor into the conversion. This is generally useful for inputs such as raw HackRF files where the input bytes represent a -1 to 1.0 scale.
+  This block incorporates an SCHAR_MAX scaling factor into the conversion, making the output a -1 to 1 scale.
   
   For comparison:
   IChar to Complex uses a out = (float)in

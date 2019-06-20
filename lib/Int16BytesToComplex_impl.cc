@@ -717,8 +717,9 @@ namespace gr {
     {
         const int16_t *in = (const int16_t *) input_items[0];
         float *out = (float *) output_items[0];
+        long incomingInts = noutput_items * 2;  // each is a double pair
 
-        for (int i=0;i<noutput_items;i++) {
+        for (int i=0;i<incomingInts;i++) {
   			*out++ = ((float)(*in++))/(float)SHRT_MAX;
         }
 
