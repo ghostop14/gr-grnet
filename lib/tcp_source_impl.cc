@@ -323,15 +323,10 @@ namespace gr {
     	// we could get here even if no data was received but there's still data in the queue.
     	// however read blocks so we want to make sure we have data before we call it.
     	if (bytesAvailable > 0) {
-    		int bytesToGet;
-    		if (bytesAvailable > numRequested)
-    			bytesToGet=numRequested;
-    		else
-    			bytesToGet=bytesAvailable;
-
         	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
-            // bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesAvailable), ec);
-            bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesToGet), ec);
+            bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesAvailable), ec);
+
+            // std::cout << "Bytes Read: " << bytesRead << std::endl;
 
             if (ec) {
             	std::cout << "Boost TCP socket error " << ec << std::endl;
@@ -346,36 +341,11 @@ namespace gr {
                 // we'll only return noutput_items bytes
                 const char *readData = boost::asio::buffer_cast<const char*>(read_buffer.data());
 
-                int blocksRead=bytesRead / d_block_size;
-                int remainder = bytesRead % d_block_size;
-
-                if ((localQueue.size()==0) && (remainder==0)) {
-                	// If we don't have any data in the current queue,
-                	// and in=out, we'll just move the data and exit.  It's faster.
-                	unsigned int qnoi = blocksRead * d_block_size;
-                	for (i=0;i<qnoi;i++) {
-                		out[i]=readData[i];
-                	}
-
-                	read_buffer.consume(bytesRead);
-
-                	return blocksRead;
+                // Move it to the local queue
+                for (i=0;i<bytesRead;i++) {
+                	localQueue.push(readData[i]);
                 }
-                else {
-                    // we may have had carry-forward data so we have to locally queue it
-                    // to avoid losing fragments.
-                    if (localQueue.size() < MAXQUEUESIZE) {
-                        for (i=0;i<bytesRead;i++) {
-                        	localQueue.push(readData[i]);
-                        }
-                    }
-                    else {
-                    	std::cout << "Net Overrun.  Current Queue Size: " << localQueue.size() << ". Data to add: " << bytesRead << std::endl;
-                    }
-
-                	read_buffer.consume(bytesRead);
-                }
-
+            	read_buffer.consume(bytesRead);
             }
     	}
 

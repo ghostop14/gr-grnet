@@ -38,7 +38,7 @@
 	<param>
 		<name>Port</name>
 		<key>port</key>
-		<value>0</value>
+		<value>2000</value>
 		<type>int</type>
 	</param>
 	<param>
