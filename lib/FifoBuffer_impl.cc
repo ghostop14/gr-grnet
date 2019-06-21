@@ -735,30 +735,33 @@ namespace gr {
         gr_vector_const_void_star &input_items,
         gr_vector_void_star &output_items)
     {
-        // Note: This check will also ensure we have at least noutput_items available, so no need
-        // to check that we're not asking the queue for more than it has.
-        if (minQueueLength < (noutput_items*6)) {
-        	// auto-scale min queue size based on system requests.  Make sure we have 5 max frames.
-        	minQueueLength = noutput_items * 6;
-        }
+        gr::thread::scoped_lock guard(d_mutex);	// hold mutex for duration of this function
+
+    	if (noutput_items > minQueueLength) {
+    		// We may have misjudged the required FIFO size.  Let's dynamically increase it.
+    		minQueueLength = noutput_items * 6;
+    		std::cerr << "[FIFO Buffer] Requested more output items than min queue length.  Dynamically increasing queue requirement." << std::endl;
+    	}
 
     	switch (dataType) {
     	case FIFOTYPE_COMPLEX: {
-			const gr_complex *in = (const gr_complex *) input_items[0];
-			gr_complex *out = (gr_complex *) output_items[0];
+			const gr_complex *incomplex = (const gr_complex *) input_items[0];
+			gr_complex *outcomplex = (gr_complex *) output_items[0];
 
-	        gr::thread::scoped_lock guard(d_mutex);	// hold mutex for duration of this function
+	        // Queue what we have
 			for (long i=0;i<noutput_items;i++) {
-				complexQueue.push(in[i]);
+				complexQueue.push(incomplex[i]);
 			}
 
+			// See if we have enough to meet our min requirement.  If not, just return 0's
 			if (complexQueue.size() < minQueueLength) {
-				memset(out,0x00,d_itemSize*noutput_items);
+				memset(outcomplex,0x00,d_itemSize*noutput_items);
 				return noutput_items;
 			}
 
-			for (int i=0;i<noutput_items;i++) {
-				out[i] = complexQueue.front();
+			// Because of the dynamic guard on minQueueLength, we'll always have noutput_items available if we're here
+			for (long i=0;i<noutput_items;i++) {
+				outcomplex[i] = complexQueue.front();
 				complexQueue.pop();
 			}
 
@@ -766,28 +769,29 @@ namespace gr {
     	break;
 
     	case FIFOTYPE_FLOAT: {
-			const float *in = (const float *) input_items[0];
-			float *out = (float *) output_items[0];
+			const float *infloat = (const float *) input_items[0];
+			float *outfloat = (float *) output_items[0];
 
-			gr::thread::scoped_lock guard(d_mutex);	// hold mutex for duration of this function
+	        // Queue what we have
 			for (long i=0;i<noutput_items;i++) {
-				floatQueue.push(in[i]);
+				floatQueue.push(infloat[i]);
 			}
 
+			// See if we have enough to meet our min requirement.  If not, just return 0's
 			if (floatQueue.size() < minQueueLength) {
-				memset(out,0x00,d_itemSize*noutput_items);
+				memset(outfloat,0x00,d_itemSize*noutput_items);
 				return noutput_items;
 			}
 
-			for (int i=0;i<noutput_items;i++) {
-				out[i] = floatQueue.front();
+			// Because of the dynamic guard on minQueueLength, we'll always have noutput_items available if we're here
+			// std::cerr << "Enough data." << std::endl;
+			for (long i=0;i<noutput_items;i++) {
+				outfloat[i] = floatQueue.front();
 				floatQueue.pop();
 			}
     	}
     	break;
     	}
-
-      // Do <+signal processing+>
 
       // Tell runtime system how many output items we produced.
       return noutput_items;
