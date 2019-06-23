@@ -24,9 +24,8 @@
 
 #include <gnuradio/io_signature.h>
 #include "tcp_source_impl.h"
-
 // 256 * 1024
-#define MAXQUEUESIZE 262144
+// #define MAXQUEUESIZE 262144
 
 namespace gr {
   namespace grnet {
@@ -49,80 +48,189 @@ namespace gr {
     {
     	d_block_size = d_itemsize * d_veclen;
 
+    	stopThread = false;
+    	threadRunning = false;
+    	bConnected = false;
+    	tcpsocket = NULL;
+
+    	readThread = new boost::thread(boost::bind(&tcp_source_impl::readData, this));
+
+    	// Set up listener
+    	try {
+		d_acceptor = new boost::asio::ip::tcp::acceptor(d_io_service,boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(),d_port));
+    	}
+    	catch(...) {
+    		std::cerr << "[TCP Source] Error creating socket listener." << std::endl;
+    		exit(1);
+    	}
+
+    	// Set up a different run thread for the io_service
+		d_io_serv_thread = boost::thread(boost::bind(&boost::asio::io_service::run, &d_io_service));
+
     	connect(true);
     }
 
     void tcp_source_impl::connect(bool initialConnection) {
-        std::cout << "TCP Source waiting for connection on port " << d_port << std::endl;
-        if (initialConnection) {
-        	/*
-			d_acceptor.open(d_endpoint.protocol());
-			d_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-			d_acceptor.bind(d_endpoint);
-			*/
-	        d_acceptor = new boost::asio::ip::tcp::acceptor(d_io_service,boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(),d_port));
-        }
-        else {
-			d_io_service.reset();
-        }
+         std::cout << "TCP Source waiting for connection on port " << d_port << std::endl;
+         if (!initialConnection) {
+ 			d_io_service.reset();
+         }
 
-        // d_acceptor.listen();
+         // d_acceptor.listen();
 
-        // switched to match boost example code with a copy/temp pointer
-        if (tcpsocket) {
-        	delete tcpsocket;
-        }
-		tcpsocket = NULL; // new boost::asio::ip::tcp::socket(d_io_service);
-        // This will block while waiting for a connection
-        // d_acceptor.accept(*tcpsocket, d_endpoint);
-		bConnected = false;
+         // switched to match boost example code with a copy/temp pointer
+         {
+ 			gr::thread::scoped_lock guard(d_socketmutex);
+ 			if (tcpsocket) {
+ 				delete tcpsocket;
+ 			}
+ 			tcpsocket = NULL; // new boost::asio::ip::tcp::socket(d_io_service);
+ 	        // This will block while waiting for a connection
+ 	        // d_acceptor.accept(*tcpsocket, d_endpoint);
+ 			bConnected = false;
+         }
 
+ 		// Good full example:
+ 		// http://www.boost.org/doc/libs/1_36_0/doc/html/boost_asio/example/echo/async_tcp_echo_server.cpp
+ 		// Boost tutorial
+ 		// http://www.boost.org/doc/libs/1_63_0/doc/html/boost_asio/tutorial.html
 
-		// Good full example:
-		// http://www.boost.org/doc/libs/1_36_0/doc/html/boost_asio/example/echo/async_tcp_echo_server.cpp
-		// Boost tutorial
-		// http://www.boost.org/doc/libs/1_63_0/doc/html/boost_asio/tutorial.html
+ 		boost::asio::ip::tcp::socket *tmpSocket = new boost::asio::ip::tcp::socket(d_io_service);
+ 		d_acceptor->async_accept(*tmpSocket,
+ 				boost::bind(&tcp_source_impl::accept_handler, this, tmpSocket, // This will make a ptr copy // boost::ref(tcpsocket),  // << pass by reference
+ 				          boost::asio::placeholders::error));
 
-		boost::asio::ip::tcp::socket *tmpSocket = new boost::asio::ip::tcp::socket(d_io_service);
-		d_acceptor->async_accept(*tmpSocket,
-				boost::bind(&tcp_source_impl::accept_handler, this, tmpSocket, // This will make a ptr copy // boost::ref(tcpsocket),  // << pass by reference
-				          boost::asio::placeholders::error));
+		d_io_service.run();
+     }
 
-		if (initialConnection) {
-			d_io_service.run();
+     void tcp_source_impl::accept_handler(boost::asio::ip::tcp::socket * new_connection,
+   	      const boost::system::error_code& error)
+     {
+       if (!error)
+       {
+           std::cout << "TCP Source Connection established." << std::endl;
+         // Accept succeeded.
+         gr::thread::scoped_lock guard(d_socketmutex);
+
+         tcpsocket = new_connection;
+
+       	boost::asio::socket_base::keep_alive option(true);
+       	tcpsocket->set_option(option);
+       	bConnected = true;
+
+       }
+       else {
+     	  std::cout << "Error code " << error << " accepting boost TCP session." << std::endl;
+
+     	  // Boost made a copy so we have to clean up
+     	  delete new_connection;
+
+     	  // safety settings.
+     	  bConnected = false;
+     	  tcpsocket = NULL;
+       }
+     }
+
+     bool tcp_source_impl::stop() {
+     	stopThread = true;
+
+     	while (threadRunning) {
+     		usleep(50);
+     	}
+
+     	delete readThread;
+     	readThread = NULL;
+
+         gr::thread::scoped_lock guard(d_socketmutex);
+
+         if (tcpsocket) {
+  			tcpsocket->close();
+  			delete tcpsocket;
+              tcpsocket = NULL;
+          }
+
+          d_io_service.reset();
+          d_io_service.stop();
+          d_io_serv_thread.join();
+
+          if (d_acceptor) {
+          	delete d_acceptor;
+          	d_acceptor=NULL;
+          }
+          return true;
+     }
+
+	void tcp_source_impl::readData() {
+    	threadRunning = true;
+    	size_t bytesAvailable;
+
+    	while (!stopThread) {
+    		// If we're not connected just hang-out.
+    		if (!bConnected) {
+    			usleep(50);
+    			continue;
+    		}
+
+        	bytesAvailable = netDataAvailable();
+
+            if (bytesAvailable == 0) {
+            	// check if we disconnected:
+            	checkForDisconnect();
+            }
+
+        	size_t bytesRead;
+
+        	// we could get here even if no data was received but there's still data in the queue.
+        	// however read blocks so we want to make sure we have data before we call it.
+        	if (bytesAvailable > 0) {
+				// boost::array<char, bytesAvailable> buf;
+            	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
+        		{
+					gr::thread::scoped_lock guard(d_socketmutex);
+					bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesAvailable), ec);
+					if (bytesRead != bytesAvailable) {
+						std::cerr << "[TCP Source] ERROR Reading bytes.  " << bytesRead << " bytes read out of " << bytesAvailable << " bytes available" << std::endl;
+					}
+        		}
+
+                if (ec) {
+                	std::cout << "[TCP Source] TCP socket error: " << ec << std::endl;
+                }
+
+                if (bytesRead > 0) {
+                	// commit the bytes to the stream
+                    read_buffer.commit(bytesRead);
+
+                    // Get the data and add it to our local queue.  We have to maintain a local queue
+                    // in case we read more bytes than noutput_items is asking for.  In that case
+                    // we'll only return noutput_items bytes
+                    const char *readData = boost::asio::buffer_cast<const char*>(read_buffer.data());
+
+                    queueData(readData,bytesRead);
+                    // queueData(&buf[0],bytesRead);
+
+                    // Tell the stream we've consumed the data.
+                	read_buffer.consume(bytesRead);
+
+                }
+        	}
+
+    		usleep(20);
+    	}
+
+    	threadRunning = false;
+	}
+
+	void tcp_source_impl::queueData(const char *data, long numBytes) {
+    	// Lock mutex to add to the queue
+		gr::thread::scoped_lock guard(d_mutex);
+
+		for (long i=0;i<numBytes;i++) {
+			localQueue.push(data[i]);
 		}
-		else {
-			d_io_service.run();
-		}
-    }
+	}
 
-    void tcp_source_impl::accept_handler(boost::asio::ip::tcp::socket * new_connection,
-  	      const boost::system::error_code& error)
-    {
-      if (!error)
-      {
-          std::cout << "TCP Source Connection established." << std::endl;
-        // Accept succeeded.
-        tcpsocket = new_connection;
-
-      	boost::asio::socket_base::keep_alive option(true);
-      	tcpsocket->set_option(option);
-      	bConnected = true;
-
-      }
-      else {
-    	  std::cout << "Error code " << error << " accepting boost TCP session." << std::endl;
-
-    	  // Boost made a copy so we have to clean up
-    	  delete new_connection;
-
-    	  // safety settings.
-    	  bConnected = false;
-    	  tcpsocket = NULL;
-      }
-    }
-
-    /*
+     /*
      * Our virtual destructor.
      */
     tcp_source_impl::~tcp_source_impl()
@@ -130,39 +238,35 @@ namespace gr {
     	stop();
     }
 
-    bool tcp_source_impl::stop() {
-        if (tcpsocket) {
- 			tcpsocket->close();
- 			delete tcpsocket;
-             tcpsocket = NULL;
-         }
-
-         d_io_service.reset();
-         d_io_service.stop();
-
-         if (d_acceptor) {
-         	delete d_acceptor;
-         	d_acceptor=NULL;
-         }
-         return true;
-    }
-
     size_t tcp_source_impl::dataAvailable() {
     	// Get amount of data available
-    	boost::asio::socket_base::bytes_readable command(true);
-    	tcpsocket->io_control(command);
-    	size_t bytes_readable = command.get();
+        gr::thread::scoped_lock guard(d_mutex);
 
-    	return (bytes_readable+localQueue.size());
+    	return localQueue.size();
     }
 
     size_t tcp_source_impl::netDataAvailable() {
     	// Get amount of data available
-    	boost::asio::socket_base::bytes_readable command(true);
-    	tcpsocket->io_control(command);
-    	size_t bytes_readable = command.get();
 
-    	return bytes_readable;
+		if (tcpsocket) {
+
+	    	boost::asio::socket_base::bytes_readable command(true);
+			gr::thread::scoped_lock guard(d_socketmutex);
+
+	    	tcpsocket->io_control(command);
+	    	size_t bytes_readable = command.get();
+
+			/*
+			size_t bytes_readable = tcpsocket->available();
+
+			if (bytes_readable > 0)
+				std::cout << "Has bytes: " << bytes_readable << std::endl;
+			*/
+	    	return bytes_readable;
+		}
+		else {
+			return 0;
+		}
     }
 
     void tcp_source_impl::checkForDisconnect() {
@@ -179,8 +283,11 @@ namespace gr {
     		  tcpsocket = NULL;
 
     		  // clear any queue items
-    		  std::queue<char> empty;
-    		  std::swap(localQueue, empty );
+    		  {
+				  gr::thread::scoped_lock guard(d_mutex);
+				  std::queue<char> empty;
+				  std::swap(localQueue, empty );
+    		  }
 
     	      connect(false);
   	    }
@@ -196,85 +303,18 @@ namespace gr {
         gr_vector_const_void_star &input_items,
         gr_vector_void_star &output_items)
     {
-        gr::thread::scoped_lock guard(d_mutex);
+    	if (!bConnected)
+    		return 0;
 
-    	int bytesAvailable = netDataAvailable();
+        size_t bytesAvailable = dataAvailable();
 
-        if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
-        	// check if we disconnected:
-        	checkForDisconnect();
-
-        	// quick exit if nothing to do
+        if (bytesAvailable == 0) {
        		return 0;
         }
 
-    	int bytesRead;
-        char *out = (char *) output_items[0];
-    	int returnedItems;
     	int localNumItems;
-        int i;
-    	unsigned int numRequested = noutput_items * d_block_size;
-
-    	// we could get here even if no data was received but there's still data in the queue.
-    	// however read blocks so we want to make sure we have data before we call it.
-    	if (bytesAvailable > 0) {
-    		int bytesToGet;
-    		if (bytesAvailable > numRequested)
-    			bytesToGet=numRequested;
-    		else
-    			bytesToGet=bytesAvailable;
-
-        	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
-            // bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesAvailable), ec);
-            bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesToGet), ec);
-
-            if (ec) {
-            	std::cout << "Boost TCP socket error " << ec << std::endl;
-            }
-
-            if (bytesRead > 0) {
-                read_buffer.commit(bytesRead);
-
-                // Get the data and add it to our local queue.  We have to maintain a local queue
-                // in case we read more bytes than noutput_items is asking for.  In that case
-                // we'll only return noutput_items bytes
-                const char *readData = boost::asio::buffer_cast<const char*>(read_buffer.data());
-
-                int blocksRead=bytesRead / d_block_size;
-                int remainder = bytesRead % d_block_size;
-
-                if ((localQueue.size()==0) && (remainder==0)) {
-                	// If we don't have any data in the current queue,
-                	// and in=out, we'll just move the data and exit.  It's faster.
-                	unsigned int qnoi = blocksRead * d_block_size;
-                	for (i=0;i<qnoi;i++) {
-                		out[i]=readData[i];
-                	}
-
-                	read_buffer.consume(bytesRead);
-
-                	return blocksRead;
-                }
-                else {
-                    // we may have had carry-forward data so we have to locally queue it
-                    // to avoid losing fragments.
-                    if (localQueue.size() < MAXQUEUESIZE) {
-                        for (i=0;i<bytesRead;i++) {
-                        	localQueue.push(readData[i]);
-                        }
-                    }
-                    else {
-                    	std::cout << "Net Overrun.  Current Queue Size: " << localQueue.size() << ". Data to add: " << bytesRead << std::endl;
-                    }
-
-                	read_buffer.consume(bytesRead);
-                }
-
-            }
-    	}
-
     	// let's figure out how much we have in relation to noutput_items
-        localNumItems = localQueue.size() / d_block_size;
+        localNumItems = bytesAvailable / d_block_size;
 
         // This takes care of if we have more data than is being requested
         if (localNumItems >= noutput_items) {
@@ -282,9 +322,12 @@ namespace gr {
         }
 
         // Now convert our block back to bytes
-    	unsigned int noi = localNumItems * d_block_size;  // block size is sizeof(item) * vlen
+    	long bytesRequested = localNumItems * d_block_size;  // block size is sizeof(item) * vlen
+        char *out = (char *) output_items[0];
 
-    	for (i=0;i<noi;i++) {
+        gr::thread::scoped_lock guard(d_mutex);
+
+    	for (long i=0;i<bytesRequested;i++) {
     		out[i]=localQueue.front();
     		localQueue.pop();
     	}
@@ -298,72 +341,36 @@ namespace gr {
         gr_vector_const_void_star &input_items,
         gr_vector_void_star &output_items)
     {
-        gr::thread::scoped_lock guard(d_mutex);
-
     	if (!bConnected)
     		return 0;
 
-    	int bytesAvailable = netDataAvailable();
+        size_t bytesAvailable = dataAvailable();
 
-        if ((bytesAvailable == 0) && (localQueue.size() == 0)) {
-        	// check if we disconnected:
-        	checkForDisconnect();
-
-        	// quick exit if nothing to do
+        if ((bytesAvailable == 0)) {
        		return 0;
         }
 
-    	int bytesRead;
-        char *out = (char *) output_items[0];
-    	int returnedItems;
     	int localNumItems;
-        int i;
-    	unsigned int numRequested = noutput_items * d_block_size;
-
-    	// we could get here even if no data was received but there's still data in the queue.
-    	// however read blocks so we want to make sure we have data before we call it.
-    	if (bytesAvailable > 0) {
-        	// http://stackoverflow.com/questions/28929699/boostasio-read-n-bytes-from-socket-to-streambuf
-            bytesRead = boost::asio::read(*tcpsocket, read_buffer,boost::asio::transfer_exactly(bytesAvailable), ec);
-
-            // std::cout << "Bytes Read: " << bytesRead << std::endl;
-
-            if (ec) {
-            	std::cout << "Boost TCP socket error " << ec << std::endl;
-            	return 0;
-            }
-
-            if (bytesRead > 0) {
-                read_buffer.commit(bytesRead);
-
-                // Get the data and add it to our local queue.  We have to maintain a local queue
-                // in case we read more bytes than noutput_items is asking for.  In that case
-                // we'll only return noutput_items bytes
-                const char *readData = boost::asio::buffer_cast<const char*>(read_buffer.data());
-
-                // Move it to the local queue
-                for (i=0;i<bytesRead;i++) {
-                	localQueue.push(readData[i]);
-                }
-            	read_buffer.consume(bytesRead);
-            }
-    	}
-
     	// let's figure out how much we have in relation to noutput_items
-        localNumItems = localQueue.size() / d_block_size;
+        localNumItems = bytesAvailable / d_block_size;
 
         // This takes care of if we have more data than is being requested
         if (localNumItems >= noutput_items) {
         	localNumItems = noutput_items;
         }
 
-        // Now convert our block back to bytes
-    	unsigned int noi = localNumItems * d_block_size;  // block size is sizeof(item) * vlen
+        if (localNumItems > 0) {
+            // Now convert our block back to bytes
+         	long bytesRequested = localNumItems * d_block_size;  // block size is sizeof(item) * vlen
+             char *out = (char *) output_items[0];
 
-    	for (i=0;i<noi;i++) {
-    		out[i]=localQueue.front();
-    		localQueue.pop();
-    	}
+             gr::thread::scoped_lock guard(d_mutex);
+
+         	for (long i=0;i<bytesRequested;i++) {
+         		out[i]=localQueue.front();
+         		localQueue.pop();
+         	}
+       }
 
     	// If we had less data than requested, it'll be reflected in the return value.
         return localNumItems;

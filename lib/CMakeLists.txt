@@ -36,7 +36,6 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 list(APPEND grnet_sources
     tcp_sink_impl.cc
-    tcp_source_impl.cc
     udp_sink_impl.cc
     udp_source_impl.cc
     PCAPUDPSource_impl.cc

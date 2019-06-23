@@ -34,7 +34,7 @@ namespace gr {
 
     class udp_source_impl : public udp_source
     {
-     private:
+     protected:
         size_t d_itemsize;
         size_t d_veclen;
         size_t d_block_size;

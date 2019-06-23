@@ -25,13 +25,14 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <queue>
+#include <boost/array.hpp>
 
 namespace gr {
   namespace grnet {
 
     class tcp_source_impl : public tcp_source
     {
-     private:
+     protected:
         size_t d_itemsize;
         size_t d_veclen;
         size_t d_block_size;
@@ -41,19 +42,30 @@ namespace gr {
         boost::system::error_code ec;
 
         boost::asio::io_service d_io_service;
-        boost::asio::ip::tcp::endpoint d_endpoint;
+        boost::thread d_io_serv_thread;
+		boost::asio::ip::tcp::endpoint d_endpoint;
         boost::asio::ip::tcp::socket *tcpsocket=NULL;
         boost::asio::ip::tcp::acceptor *d_acceptor=NULL;
 
         bool bConnected;
 
+		boost::thread *readThread;
+		bool threadRunning;
+		bool stopThread;
+
     	std::queue<char> localQueue;
         boost::asio::streambuf read_buffer;
+        int buffSize = 4096;
+        boost::array<char, 4096> buffer;
 
-        boost::mutex d_mutex;
+        boost::mutex d_mutex; //used for queue
+        boost::mutex d_socketmutex; // used for socket
 
         void connect(bool initialConnection);
         void checkForDisconnect();
+
+        void readData();
+        void queueData(const char *data, long numBytes);
 
      public:
       tcp_source_impl(size_t itemsize,size_t vecLen, int port);

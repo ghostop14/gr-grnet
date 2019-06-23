@@ -163,7 +163,7 @@
     </param>
     <param>
       <key>_enabled</key>
-      <value>1</value>
+      <value>0</value>
     </param>
     <param>
       <key>_coordinate</key>
@@ -346,6 +346,10 @@
   <block>
     <key>grnet_tcp_source</key>
     <param>
+      <key>addr</key>
+      <value>127.0.0.1</value>
+    </param>
+    <param>
       <key>alias</key>
       <value></value>
     </param>
@@ -359,11 +363,11 @@
     </param>
     <param>
       <key>_enabled</key>
-      <value>0</value>
+      <value>1</value>
     </param>
     <param>
       <key>_coordinate</key>
-      <value>(192, 300)</value>
+      <value>(192, 260)</value>
     </param>
     <param>
       <key>_rotation</key>
@@ -374,16 +378,20 @@
       <value>grnet_tcp_source_0</value>
     </param>
     <param>
-      <key>type</key>
-      <value>complex</value>
-    </param>
-    <param>
       <key>maxoutbuf</key>
       <value>0</value>
     </param>
     <param>
       <key>minoutbuf</key>
       <value>0</value>
+    </param>
+    <param>
+      <key>server</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>type</key>
+      <value>complex</value>
     </param>
     <param>
       <key>port</key>

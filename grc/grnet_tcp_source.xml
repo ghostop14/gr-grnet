@@ -1,12 +1,22 @@
 <?xml version="1.0"?>
+<!--
+#####################################################################################
+##TCP Source: Original GNU Radio block was deprecated.  This is to preserve original
+#####################################################################################
+ -->
 <block>
-  <name>TCP Source (grnet)</name>
-  <key>grnet_tcp_source</key>
-  <category>[GrNet Networking Tools]</category>
-  <import>import grnet</import>
-  <make>grnet.tcp_source($type.size, $vlen, $port)</make>
+	<name>TCP Source (grnet)</name>
+	<key>grnet_tcp_source</key>
+	<category>[GrNet Networking Tools]</category>
+	<import>import grnet</import>
+	<make>grnet.tcp_source.tcp_source(
+	itemsize=$type.size*$vlen,
+	addr=$addr,
+	port=$port,
+	server=$server,
+)</make>
 	<param>
-		<name>Input Type</name>
+		<name>Output Type</name>
 		<key>type</key>
 		<type>enum</type>
 		<option>
@@ -36,10 +46,30 @@
 		</option>
 	</param>
 	<param>
+		<name>Address</name>
+		<key>addr</key>
+		<value>127.0.0.1</value>
+		<type>string</type>
+	</param>
+	<param>
 		<name>Port</name>
 		<key>port</key>
-		<value>2000</value>
+		<value>0</value>
 		<type>int</type>
+	</param>
+	<param>
+		<name>Mode</name>
+		<key>server</key>
+		<value>True</value>
+		<type>enum</type>
+		<option>
+			<name>Server</name>
+			<key>True</key>
+		</option>
+		<option>
+			<name>Client</name>
+			<key>False</key>
+		</option>
 	</param>
 	<param>
 		<name>Vec Length</name>
@@ -53,4 +83,10 @@
 		<type>$type</type>
 		<vlen>$vlen</vlen>
 	</source>
+	<doc>
+	NOTE: This block is the original GNU Radio TCP Source block, incorporated here due to deprecation.  Attempts were made to rewrite this block with boost, however boost would lose data and the root cause was never uncovered.  May be why GNU Radio chose to implement this in Python as well.
+	
+In client mode, we attempt to connect to a server at the given address and port. \
+In server mode, we bind a socket to the given address and port and accept the first client.
+	</doc>
 </block>

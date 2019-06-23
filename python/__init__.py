@@ -32,3 +32,4 @@ except ImportError:
 
 # import any pure python here
 #
+from grnet import tcp_source
