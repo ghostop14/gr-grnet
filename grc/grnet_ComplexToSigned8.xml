@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <block>
-  <name>Complex To Scaled Signed8</name>
+  <name>Complex To Interleaved Signed8</name>
   <key>grnet_ComplexToSigned8</key>
-  <category>[GrNet Networking Tools]</category>
+  <category>[GrNet Networking Tools]/Type Converters</category>
   <import>import grnet</import>
   <make>grnet.ComplexToSigned8()</make>
   <sink>
@@ -14,11 +14,6 @@
     <type>byte</type>
   </source>
   <doc>
-  This block incorporates an SCHAR_MAX scaling factor into the conversion, generally creating a -1 to 1 scale.
-  
-  For comparison:
-  Complex -> IChar uses a lrintf() function to convert fc32->S8
-  This block converts using out = in * SCHAR_MAX
-  
+  This block takes float complex values and downsamples to interleaved signed8.  This block would for example pair with a hardware source block such as using an 8-bit SDR and restore the source block's float complex out back to 8-bit values.  Note however that these are signed8 (hackrf format), not unsigned8 (rtl format).
   </doc>
 </block>

@@ -675,58 +675,31 @@
  * <http://www.gnu.org/philosophy/why-not-lgpl.html>.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#ifndef INCLUDED_GRNET_COMPLEXTOSC16_IMPL_H
+#define INCLUDED_GRNET_COMPLEXTOSC16_IMPL_H
 
-#include <gnuradio/io_signature.h>
-#include "ComplexToSigned8_impl.h"
+#include <grnet/ComplexToSC16.h>
 
 namespace gr {
   namespace grnet {
 
-    ComplexToSigned8::sptr
-    ComplexToSigned8::make()
+    class ComplexToSC16_impl : public ComplexToSC16
     {
-      return gnuradio::get_initial_sptr
-        (new ComplexToSigned8_impl());
-    }
+     private:
+      // Nothing to declare in this block.
 
-    /*
-     * The private constructor
-     */
-    ComplexToSigned8_impl::ComplexToSigned8_impl()
-      : gr::sync_interpolator("ComplexToSigned8",
-              gr::io_signature::make(1, 1, sizeof(gr_complex)),
-              gr::io_signature::make(1, 1, sizeof(char)), 2)
-    {
+     public:
+      ComplexToSC16_impl();
+      ~ComplexToSC16_impl();
 
-    }
+      // Where all the action really happens
+      int work(int noutput_items,
+         gr_vector_const_void_star &input_items,
+         gr_vector_void_star &output_items);
+    };
 
-    /*
-     * Our virtual destructor.
-     */
-    ComplexToSigned8_impl::~ComplexToSigned8_impl()
-    {
-    }
+  } // namespace grnet
+} // namespace gr
 
-    int
-    ComplexToSigned8_impl::work(int noutput_items,
-        gr_vector_const_void_star &input_items,
-        gr_vector_void_star &output_items)
-    {
-      const float *in = (const float *) input_items[0];
-      signed char *out = (signed char *) output_items[0];
-      long numFloats = noutput_items; //  * 2;
-
-      for (int i=0;i<numFloats;i++) {
-    	  *out++ = (signed char)lrintf(*in++ * (float)SCHAR_MAX);
-      }
-
-      // Tell runtime system how many output items we produced.
-      return noutput_items;
-    }
-
-  } /* namespace grnet */
-} /* namespace gr */
+#endif /* INCLUDED_GRNET_COMPLEXTOSC16_IMPL_H */
 

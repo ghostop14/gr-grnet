@@ -34,5 +34,9 @@ install(FILES
     FifoBuffer.h
     SC16ToBytes.h
     BytesToSC16.h
-    ByteComplexDecimator.h DESTINATION include/grnet
+    ByteComplexDecimator.h
+    SC16ToComplex.h
+    ComplexToSC16.h
+    SC16ToIShort.h
+    IShortToSC16.h DESTINATION include/grnet
 )

@@ -30,5 +30,9 @@ install(FILES
     grnet_FifoBuffer.xml
     grnet_SC16ToBytes.xml
     grnet_BytesToSC16.xml
-    grnet_ByteComplexDecimator.xml DESTINATION share/gnuradio/grc/blocks
+    grnet_ByteComplexDecimator.xml
+    grnet_SC16ToComplex.xml
+    grnet_ComplexToSC16.xml
+    grnet_SC16ToIShort.xml
+    grnet_IShortToSC16.xml DESTINATION share/gnuradio/grc/blocks
 )

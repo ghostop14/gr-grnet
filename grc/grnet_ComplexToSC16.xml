@@ -1,17 +1,17 @@
 <?xml version="1.0"?>
 <block>
-  <name>Complex To Interleaved Short Bytes</name>
-  <key>grnet_ComplexToInt16Bytes</key>
+  <name>Complex To Interleaved Short</name>
+  <key>grnet_ComplexToSC16</key>
   <category>[GrNet Networking Tools]/Type Converters</category>
   <import>import grnet</import>
-  <make>grnet.ComplexToInt16Bytes()</make>
+  <make>grnet.ComplexToSC16()</make>
   <sink>
     <name>in</name>
     <type>complex</type>
   </sink>
   <source>
     <name>out</name>
-    <type>byte</type>
+    <type>short</type>
   </source>
   <doc>
   This block incorporates an SHRT_MAX scaling factor into the conversion similar to csdr type conversions.

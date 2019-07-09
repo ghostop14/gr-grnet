@@ -680,25 +680,25 @@
 #endif
 
 #include <gnuradio/io_signature.h>
-#include "ComplexToSigned8_impl.h"
+#include "ComplexToSC16_impl.h"
 
 namespace gr {
   namespace grnet {
 
-    ComplexToSigned8::sptr
-    ComplexToSigned8::make()
+    ComplexToSC16::sptr
+    ComplexToSC16::make()
     {
       return gnuradio::get_initial_sptr
-        (new ComplexToSigned8_impl());
+        (new ComplexToSC16_impl());
     }
 
     /*
      * The private constructor
      */
-    ComplexToSigned8_impl::ComplexToSigned8_impl()
-      : gr::sync_interpolator("ComplexToSigned8",
+    ComplexToSC16_impl::ComplexToSC16_impl()
+      : gr::sync_interpolator("ComplexToSC16",
               gr::io_signature::make(1, 1, sizeof(gr_complex)),
-              gr::io_signature::make(1, 1, sizeof(char)), 2)
+              gr::io_signature::make(1, 1, sizeof(int16_t)), 2)
     {
 
     }
@@ -706,25 +706,25 @@ namespace gr {
     /*
      * Our virtual destructor.
      */
-    ComplexToSigned8_impl::~ComplexToSigned8_impl()
+    ComplexToSC16_impl::~ComplexToSC16_impl()
     {
     }
 
     int
-    ComplexToSigned8_impl::work(int noutput_items,
+    ComplexToSC16_impl::work(int noutput_items,
         gr_vector_const_void_star &input_items,
         gr_vector_void_star &output_items)
     {
-      const float *in = (const float *) input_items[0];
-      signed char *out = (signed char *) output_items[0];
-      long numFloats = noutput_items; //  * 2;
+        const float *in = (const float *) input_items[0];
+        int16_t *out = (int16_t *) output_items[0];
+        long numFloats = noutput_items;
 
-      for (int i=0;i<numFloats;i++) {
-    	  *out++ = (signed char)lrintf(*in++ * (float)SCHAR_MAX);
-      }
+        for (int i=0;i<numFloats;i++) {
+      	  *out++ = (int16_t)lrintf(*in++ * (float)SHRT_MAX);
+        }
 
-      // Tell runtime system how many output items we produced.
-      return noutput_items;
+        // Tell runtime system how many output items we produced.
+        return noutput_items;
     }
 
   } /* namespace grnet */

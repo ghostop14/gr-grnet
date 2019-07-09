@@ -20,6 +20,10 @@
 #include "grnet/SC16ToBytes.h"
 #include "grnet/BytesToSC16.h"
 #include "grnet/ByteComplexDecimator.h"
+#include "grnet/SC16ToComplex.h"
+#include "grnet/ComplexToSC16.h"
+#include "grnet/SC16ToIShort.h"
+#include "grnet/IShortToSC16.h"
 %}
 
 
@@ -49,3 +53,11 @@ GR_SWIG_BLOCK_MAGIC2(grnet, SC16ToBytes);
 GR_SWIG_BLOCK_MAGIC2(grnet, BytesToSC16);
 %include "grnet/ByteComplexDecimator.h"
 GR_SWIG_BLOCK_MAGIC2(grnet, ByteComplexDecimator);
+%include "grnet/SC16ToComplex.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, SC16ToComplex);
+%include "grnet/ComplexToSC16.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, ComplexToSC16);
+%include "grnet/SC16ToIShort.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, SC16ToIShort);
+%include "grnet/IShortToSC16.h"
+GR_SWIG_BLOCK_MAGIC2(grnet, IShortToSC16);

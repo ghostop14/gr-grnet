@@ -1,23 +1,23 @@
 <?xml version="1.0"?>
 <block>
-  <name>Complex To Interleaved Short Bytes</name>
-  <key>grnet_ComplexToInt16Bytes</key>
+  <name>Interleaved Short to Complex</name>
+  <key>grnet_SC16ToComplex</key>
   <category>[GrNet Networking Tools]/Type Converters</category>
   <import>import grnet</import>
-  <make>grnet.ComplexToInt16Bytes()</make>
+  <make>grnet.SC16ToComplex()</make>
   <sink>
     <name>in</name>
-    <type>complex</type>
+    <type>short</type>
   </sink>
   <source>
     <name>out</name>
-    <type>byte</type>
+    <type>complex</type>
   </source>
   <doc>
   This block incorporates an SHRT_MAX scaling factor into the conversion similar to csdr type conversions.
   
   For comparison:
-  Complex to IShort uses a lrintf() function to convert fc32->S16
-  This block converts using out = in * SHRT_MAX
+  IChar to Complex uses a out = (float)in
+  This block converts using out = (float)in / (float)SHRT_MAX
   </doc>
 </block>

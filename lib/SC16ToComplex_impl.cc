@@ -680,25 +680,25 @@
 #endif
 
 #include <gnuradio/io_signature.h>
-#include "ComplexToSigned8_impl.h"
+#include "SC16ToComplex_impl.h"
 
 namespace gr {
   namespace grnet {
 
-    ComplexToSigned8::sptr
-    ComplexToSigned8::make()
+    SC16ToComplex::sptr
+    SC16ToComplex::make()
     {
       return gnuradio::get_initial_sptr
-        (new ComplexToSigned8_impl());
+        (new SC16ToComplex_impl());
     }
 
     /*
      * The private constructor
      */
-    ComplexToSigned8_impl::ComplexToSigned8_impl()
-      : gr::sync_interpolator("ComplexToSigned8",
-              gr::io_signature::make(1, 1, sizeof(gr_complex)),
-              gr::io_signature::make(1, 1, sizeof(char)), 2)
+    SC16ToComplex_impl::SC16ToComplex_impl()
+      : gr::sync_decimator("SC16ToComplex",
+              gr::io_signature::make(1, 1, sizeof(int16_t)),
+              gr::io_signature::make(1, 1, sizeof(gr_complex)), 2)
     {
 
     }
@@ -706,25 +706,25 @@ namespace gr {
     /*
      * Our virtual destructor.
      */
-    ComplexToSigned8_impl::~ComplexToSigned8_impl()
+    SC16ToComplex_impl::~SC16ToComplex_impl()
     {
     }
 
     int
-    ComplexToSigned8_impl::work(int noutput_items,
+    SC16ToComplex_impl::work(int noutput_items,
         gr_vector_const_void_star &input_items,
         gr_vector_void_star &output_items)
     {
-      const float *in = (const float *) input_items[0];
-      signed char *out = (signed char *) output_items[0];
-      long numFloats = noutput_items; //  * 2;
+        const int16_t *in = (const int16_t *) input_items[0];
+        float *out = (float *) output_items[0];
+        long incomingInts = noutput_items * 2;  // each is a double pair
 
-      for (int i=0;i<numFloats;i++) {
-    	  *out++ = (signed char)lrintf(*in++ * (float)SCHAR_MAX);
-      }
+        for (int i=0;i<incomingInts;i++) {
+  			*out++ = ((float)(*in++))/(float)SHRT_MAX;
+        }
 
-      // Tell runtime system how many output items we produced.
-      return noutput_items;
+        // Tell runtime system how many output items we produced.
+        return noutput_items;
     }
 
   } /* namespace grnet */

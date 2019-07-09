@@ -47,6 +47,10 @@ list(APPEND grnet_sources
     SC16ToBytes_impl.cc
     BytesToSC16_impl.cc
     ByteComplexDecimator_impl.cc
+    SC16ToComplex_impl.cc
+    ComplexToSC16_impl.cc
+    SC16ToIShort_impl.cc
+    IShortToSC16_impl.cc
 )
 
 set(grnet_sources "${grnet_sources}" PARENT_SCOPE)

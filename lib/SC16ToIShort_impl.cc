@@ -680,25 +680,25 @@
 #endif
 
 #include <gnuradio/io_signature.h>
-#include "ComplexToSigned8_impl.h"
+#include "SC16ToIShort_impl.h"
 
 namespace gr {
   namespace grnet {
 
-    ComplexToSigned8::sptr
-    ComplexToSigned8::make()
+    SC16ToIShort::sptr
+    SC16ToIShort::make()
     {
       return gnuradio::get_initial_sptr
-        (new ComplexToSigned8_impl());
+        (new SC16ToIShort_impl());
     }
 
     /*
      * The private constructor
      */
-    ComplexToSigned8_impl::ComplexToSigned8_impl()
-      : gr::sync_interpolator("ComplexToSigned8",
-              gr::io_signature::make(1, 1, sizeof(gr_complex)),
-              gr::io_signature::make(1, 1, sizeof(char)), 2)
+    SC16ToIShort_impl::SC16ToIShort_impl()
+      : gr::sync_interpolator("SC16ToIShort",
+              gr::io_signature::make(1, 1, sizeof(int16_t)*2),
+              gr::io_signature::make(1, 1, sizeof(int16_t)), 2)
     {
 
     }
@@ -706,25 +706,21 @@ namespace gr {
     /*
      * Our virtual destructor.
      */
-    ComplexToSigned8_impl::~ComplexToSigned8_impl()
+    SC16ToIShort_impl::~SC16ToIShort_impl()
     {
     }
 
     int
-    ComplexToSigned8_impl::work(int noutput_items,
+    SC16ToIShort_impl::work(int noutput_items,
         gr_vector_const_void_star &input_items,
         gr_vector_void_star &output_items)
     {
-      const float *in = (const float *) input_items[0];
-      signed char *out = (signed char *) output_items[0];
-      long numFloats = noutput_items; //  * 2;
+        const int16_t *in = (const int16_t *) input_items[0];
+        int16_t *out = (int16_t *) output_items[0];
 
-      for (int i=0;i<numFloats;i++) {
-    	  *out++ = (signed char)lrintf(*in++ * (float)SCHAR_MAX);
-      }
+        memcpy(out,in,sizeof(int16_t)*noutput_items);
 
-      // Tell runtime system how many output items we produced.
-      return noutput_items;
+        return noutput_items;
     }
 
   } /* namespace grnet */

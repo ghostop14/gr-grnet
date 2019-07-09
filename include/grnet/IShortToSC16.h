@@ -675,58 +675,39 @@
  * <http://www.gnu.org/philosophy/why-not-lgpl.html>.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
-#include <gnuradio/io_signature.h>
-#include "ComplexToSigned8_impl.h"
+#ifndef INCLUDED_GRNET_ISHORTTOSC16_H
+#define INCLUDED_GRNET_ISHORTTOSC16_H
+
+#include <grnet/api.h>
+#include <gnuradio/sync_decimator.h>
 
 namespace gr {
   namespace grnet {
 
-    ComplexToSigned8::sptr
-    ComplexToSigned8::make()
-    {
-      return gnuradio::get_initial_sptr
-        (new ComplexToSigned8_impl());
-    }
-
-    /*
-     * The private constructor
+    /*!
+     * \brief <+description of block+>
+     * \ingroup grnet
+     *
      */
-    ComplexToSigned8_impl::ComplexToSigned8_impl()
-      : gr::sync_interpolator("ComplexToSigned8",
-              gr::io_signature::make(1, 1, sizeof(gr_complex)),
-              gr::io_signature::make(1, 1, sizeof(char)), 2)
+    class GRNET_API IShortToSC16 : virtual public gr::sync_decimator
     {
+     public:
+      typedef boost::shared_ptr<IShortToSC16> sptr;
 
-    }
+      /*!
+       * \brief Return a shared_ptr to a new instance of grnet::IShortToSC16.
+       *
+       * To avoid accidental use of raw pointers, grnet::IShortToSC16's
+       * constructor is in a private implementation
+       * class. grnet::IShortToSC16::make is the public interface for
+       * creating new instances.
+       */
+      static sptr make();
+    };
 
-    /*
-     * Our virtual destructor.
-     */
-    ComplexToSigned8_impl::~ComplexToSigned8_impl()
-    {
-    }
+  } // namespace grnet
+} // namespace gr
 
-    int
-    ComplexToSigned8_impl::work(int noutput_items,
-        gr_vector_const_void_star &input_items,
-        gr_vector_void_star &output_items)
-    {
-      const float *in = (const float *) input_items[0];
-      signed char *out = (signed char *) output_items[0];
-      long numFloats = noutput_items; //  * 2;
-
-      for (int i=0;i<numFloats;i++) {
-    	  *out++ = (signed char)lrintf(*in++ * (float)SCHAR_MAX);
-      }
-
-      // Tell runtime system how many output items we produced.
-      return noutput_items;
-    }
-
-  } /* namespace grnet */
-} /* namespace gr */
+#endif /* INCLUDED_GRNET_ISHORTTOSC16_H */
 

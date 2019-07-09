@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <block>
-  <name>Scaled SC16 Bytes To Complex</name>
+  <name>Interleaved Short Bytes To Complex</name>
   <key>grnet_Int16BytesToComplex</key>
-  <category>[GrNet Networking Tools]</category>
+  <category>[GrNet Networking Tools]/Type Converters</category>
   <import>import grnet</import>
   <make>grnet.Int16BytesToComplex()</make>
   <sink>
@@ -14,10 +14,6 @@
     <type>complex</type>
   </source>
   <doc>
-  This block incorporates an SHRT_MAX scaling factor into the conversion.
-  
-  For comparison:
-  IChar to Complex uses a out = (float)in
-  This block converts using out = (float)in / (float)SHRT_MAX
+  This block takes bytes in that represent interleaved short values as a byte stream (created with Complex to Interleaved Short Bytes) and converts it to float complex.
   </doc>
 </block>

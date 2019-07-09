@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <block>
-  <name>Scaled Signed8 To Complex</name>
+  <name>Interleaved Signed8 To Complex</name>
   <key>grnet_Signed8ToComplex</key>
-  <category>[GrNet Networking Tools]</category>
+  <category>[GrNet Networking Tools]/Type Converters</category>
   <import>import grnet</import>
   <make>grnet.Signed8ToComplex()</make>
   <sink>
@@ -14,10 +14,6 @@
     <type>complex</type>
   </source>
   <doc>
-  This block incorporates an SCHAR_MAX scaling factor into the conversion, making the output a -1 to 1 scale.
-  
-  For comparison:
-  IChar to Complex uses a out = (float)in
-  This block converts using out = (float)in / (float)SCHAR_MAX
+  This block converts signed8 interleaved samples to complex.  This conversion will be very similar to conversions done in hardware source blocks taking 8-bit samples from hardware and converting it to complex floats.
   </doc>
 </block>

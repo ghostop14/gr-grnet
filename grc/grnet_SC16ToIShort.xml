@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<block>
+  <name>Complex Int16 to Interleaved Short</name>
+  <key>grnet_SC16ToIShort</key>
+  <category>[GrNet Networking Tools]/Type Converters</category>
+  <import>import grnet</import>
+  <make>grnet.SC16ToIShort()</make>
+  <sink>
+    <name>in</name>
+    <type>sc16</type>
+  </sink>
+  <source>
+    <name>out</name>
+    <type>short</type>
+  </source>
+  <doc>
+  This block converts complex int16 such as that out of a USRP source in 'complex int16' mode to interleaved shorts.
+  </doc>
+</block>
