@@ -448,14 +448,7 @@ namespace gr {
     	if (localQueue->size() < d_payloadsize) {
     		// since we should be getting these in UDP packet blocks, this should be a fringe case, or
     		// a case where another app is sourcing the packets.
-        	if (d_sourceZeros) {
-            	// Just return 0's
-            	memset((void *)out,0x00,numRequested); // numRequested will be in bytes
-            	return noutput_items;
-        	}
-        	else {
-        		return 0; // Don't memset 0x00 since we're starting to get data.  In this case we'll hold for the rest.
-        	}
+    		return 0; // Don't memset 0x00 since we're starting to get data.  In this case we'll hold for the rest.
     	}
 
     	// Now if we're here we should have at least 1 block.
