@@ -448,6 +448,11 @@ namespace gr {
     	if (localQueue->size() < d_payloadsize) {
     		// since we should be getting these in UDP packet blocks, this should be a fringe case, or
     		// a case where another app is sourcing the packets.
+    		/*
+        	if (d_sourceZeros)
+        		std::cout << "[UDP Source] Insufficient block data.  Check your sending app is using " << d_payloadsize << " send blocks." << std::endl;
+			*/
+
     		return 0; // Don't memset 0x00 since we're starting to get data.  In this case we'll hold for the rest.
     	}
 
