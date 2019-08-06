@@ -159,7 +159,7 @@
     </param>
     <param>
       <key>_enabled</key>
-      <value>0</value>
+      <value>1</value>
     </param>
     <param>
       <key>_coordinate</key>
@@ -190,7 +190,7 @@
     </param>
     <param>
       <key>_enabled</key>
-      <value>0</value>
+      <value>1</value>
     </param>
     <param>
       <key>_coordinate</key>
@@ -203,61 +203,6 @@
     <param>
       <key>id</key>
       <value>blocks_probe_rate_0</value>
-    </param>
-    <param>
-      <key>type</key>
-      <value>complex</value>
-    </param>
-    <param>
-      <key>maxoutbuf</key>
-      <value>0</value>
-    </param>
-    <param>
-      <key>minoutbuf</key>
-      <value>0</value>
-    </param>
-    <param>
-      <key>mintime</key>
-      <value>500.0</value>
-    </param>
-    <param>
-      <key>alpha</key>
-      <value>0.15</value>
-    </param>
-    <param>
-      <key>vlen</key>
-      <value>1</value>
-    </param>
-  </block>
-  <block>
-    <key>blocks_probe_rate</key>
-    <param>
-      <key>alias</key>
-      <value></value>
-    </param>
-    <param>
-      <key>comment</key>
-      <value></value>
-    </param>
-    <param>
-      <key>affinity</key>
-      <value></value>
-    </param>
-    <param>
-      <key>_enabled</key>
-      <value>True</value>
-    </param>
-    <param>
-      <key>_coordinate</key>
-      <value>(608, 408)</value>
-    </param>
-    <param>
-      <key>_rotation</key>
-      <value>0</value>
-    </param>
-    <param>
-      <key>id</key>
-      <value>blocks_probe_rate_1</value>
     </param>
     <param>
       <key>type</key>
@@ -395,7 +340,7 @@
     </param>
     <param>
       <key>srcZeros</key>
-      <value>False</value>
+      <value>True</value>
     </param>
     <param>
       <key>payloadsize</key>
@@ -710,12 +655,6 @@
   <connection>
     <source_block_id>blocks_throttle_0</source_block_id>
     <sink_block_id>blocks_probe_rate_0</sink_block_id>
-    <source_key>0</source_key>
-    <sink_key>0</sink_key>
-  </connection>
-  <connection>
-    <source_block_id>blocks_throttle_0</source_block_id>
-    <sink_block_id>blocks_probe_rate_1</sink_block_id>
     <source_key>0</source_key>
     <sink_key>0</sink_key>
   </connection>

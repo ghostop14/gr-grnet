@@ -398,18 +398,6 @@ namespace gr {
 
     	// quick exit if nothing to do
         if ((bytesAvailable == 0) && (localQueue->size() == 0)) {
-        	if (underRunCounter == 0) {
-        		if (!firstTime) {
-                	std::cout << "nU";
-        		}
-        		else
-        			firstTime = false;
-        	}
-        	else {
-        		if (underRunCounter > 100)
-        			underRunCounter = 0;
-        	}
-
         	underRunCounter++;
         	if (d_sourceZeros) {
             	// Just return 0's
@@ -417,6 +405,18 @@ namespace gr {
             	return noutput_items;
         	}
         	else {
+            	if (underRunCounter == 0) {
+            		if (!firstTime) {
+                    	std::cout << "nU";
+            		}
+            		else
+            			firstTime = false;
+            	}
+            	else {
+            		if (underRunCounter > 100)
+            			underRunCounter = 0;
+            	}
+
         		return 0;
         	}
         }
@@ -446,8 +446,16 @@ namespace gr {
     	}
 
     	if (localQueue->size() < d_payloadsize) {
-    		// we don't have sufficient data for a block yet.
-    		return 0; // Don't memset 0x00 since we're starting to get data.  In this case we'll hold for the rest.
+    		// since we should be getting these in UDP packet blocks, this should be a fringe case, or
+    		// a case where another app is sourcing the packets.
+        	if (d_sourceZeros) {
+            	// Just return 0's
+            	memset((void *)out,0x00,numRequested); // numRequested will be in bytes
+            	return noutput_items;
+        	}
+        	else {
+        		return 0; // Don't memset 0x00 since we're starting to get data.  In this case we'll hold for the rest.
+        	}
     	}
 
     	// Now if we're here we should have at least 1 block.
