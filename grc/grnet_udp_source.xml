@@ -4,7 +4,7 @@
   <key>grnet_udp_source</key>
   <category>[GrNet Networking Tools]</category>
   <import>import grnet</import>
-  <make>grnet.udp_source($type.size, 1, $port,$header,$payloadsize,$notifyMissed,False)</make>
+  <make>grnet.udp_source($type.size, 1, $port,$header,$payloadsize,$notifyMissed,$srcZeros)</make>
 	<param>
 		<name>Input Type</name>
 		<key>type</key>
@@ -76,6 +76,19 @@
 	<param>
 		<name>Notify Missed Frames</name>
 		<key>notifyMissed</key>
+		<type>enum</type>
+		<option>
+			<name>No</name>
+			<key>False</key>
+		</option>
+		<option>
+			<name>Yes</name>
+			<key>True</key>
+		</option>
+	</param>
+	<param>
+		<name>Src 0s If No Data</name>
+		<key>srcZeros</key>
 		<type>enum</type>
 		<option>
 			<name>No</name>

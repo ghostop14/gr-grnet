@@ -413,7 +413,7 @@ namespace gr {
         	underRunCounter++;
         	if (d_sourceZeros) {
             	// Just return 0's
-            	memset((void *)out,0x00,numRequested);
+            	memset((void *)out,0x00,numRequested); // numRequested will be in bytes
             	return noutput_items;
         	}
         	else {
