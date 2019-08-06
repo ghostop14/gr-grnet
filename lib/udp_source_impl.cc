@@ -52,6 +52,7 @@ namespace gr {
     	d_sourceZeros = sourceZeros;
     	d_header_type = headerType;;
     	d_payloadsize = payloadsize;
+    	d_partialFrameCounter = 0;
 
     	d_header_size = 0;
 
@@ -399,6 +400,7 @@ namespace gr {
     	// quick exit if nothing to do
         if ((bytesAvailable == 0) && (localQueue->size() == 0)) {
         	underRunCounter++;
+        	d_partialFrameCounter = 0;
         	if (d_sourceZeros) {
             	// Just return 0's
             	memset((void *)out,0x00,numRequested); // numRequested will be in bytes
@@ -446,15 +448,25 @@ namespace gr {
     	}
 
     	if (localQueue->size() < d_payloadsize) {
-    		// since we should be getting these in UDP packet blocks, this should be a fringe case, or
+    		// since we should be getting these in UDP packet blocks matched on the sender/receiver, this should be a fringe case, or
     		// a case where another app is sourcing the packets.
-    		/*
-        	if (d_sourceZeros)
-        		std::cout << "[UDP Source] Insufficient block data.  Check your sending app is using " << d_payloadsize << " send blocks." << std::endl;
-			*/
+    		d_partialFrameCounter++;
 
+    		if (d_partialFrameCounter >= 100) {
+        		std::cout << "[UDP Source] Insufficient block data.  Check your sending app is using " << d_payloadsize << " send blocks." << std::endl;
+    			// This is just a safety to clear in the case there's a hanging partial packet.
+    			// If we've lingered through a number of calls and we still don't have any data,
+    			// clear the stale data.
+    			while (localQueue->size() > 0)
+    				localQueue->pop_front();
+
+    			d_partialFrameCounter = 0;
+    		}
     		return 0; // Don't memset 0x00 since we're starting to get data.  In this case we'll hold for the rest.
     	}
+
+    	// If we're here, it's not a partial hanging frame
+    	d_partialFrameCounter = 0;
 
     	// Now if we're here we should have at least 1 block.
 

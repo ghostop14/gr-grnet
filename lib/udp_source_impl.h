@@ -41,6 +41,7 @@ namespace gr {
 
         bool d_notifyMissed;
         bool d_sourceZeros;
+        int d_partialFrameCounter;
 
     	int d_port;
         int d_header_type;
