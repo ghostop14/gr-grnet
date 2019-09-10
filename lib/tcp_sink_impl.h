@@ -30,9 +30,9 @@
 namespace gr {
   namespace grnet {
 
-    class tcp_sink_impl : public tcp_sink
+    class GRNET_API tcp_sink_impl : public tcp_sink
     {
-     private:
+     protected:
         size_t d_itemsize;
         size_t d_veclen;
         size_t d_block_size;

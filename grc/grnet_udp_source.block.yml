@@ -16,22 +16,47 @@ parameters:
 -   id: port
     label: Port
     dtype: int
-    default: '0'
--   id: vlen
-    label: Vec Length
+    default: '2000'
+-   id: header
+    label: Header
+    dtype: enum
+    options: ['0', '1', '2', '4', '5']
+    option_labels: [None, 64-bit Sequence Number, Sequence + 16-bit data size, 'CHDR
+            (64-bit, no timestamp)', Old ATA Header]
+-   id: payloadsize
+    label: UDP Packet Data Size
     dtype: int
-    default: '1'
-    hide: ${ 'part' if vlen == 1 else 'none' }
+    default: '1472'
+-   id: notifyMissed
+    label: Notify Missed Frames
+    dtype: enum
+    options: ['False', 'True']
+    option_labels: ['No', 'Yes']
+-   id: srcZeros
+    label: Src 0s If No Data
+    dtype: enum
+    options: ['False', 'True']
+    option_labels: ['No', 'Yes']
 
 outputs:
 -   domain: stream
     dtype: ${ type }
-    vlen: ${ vlen }
-asserts:
-- ${ vlen > 0 }
 
 templates:
     imports: import grnet
-    make: grnet.udp_source(${type.size}, ${vlen}, ${port})
+    make: grnet.udp_source(${type.size}, 1, ${port},${header},${payloadsize},${notifyMissed},${srcZeros})
+
+documentation: "This block listens for traffic on the specified UDP port and outputs\
+    \ the specified data type.  Note that the header setting and payload size should\
+    \ match on both the sender and receiver.  For a normal network, a payload size\
+    \ of 1472 (1500-28 for UDP headers) represents the max size for a standard UDP\
+    \ packet.  For a Jumbo frames 8972 can be used (9000-28).  Be careful adjusting\
+    \ this parameter as you could inadvertently cause unnecessary packet fragmentation\
+    \ and reconstruction.\n\t\n\tIf you need the block to generate 0s when theres\
+    \ no UDP data, you can turn on the 'Src 0s If No Data' flag, however this is best\
+    \ paired with the grnet UDP sink block.  If using a separate application, problems\
+    \ can arise if the sending application is not calling its send function with blocks\
+    \ matching payload size (the logic here can get a 'partial' packet after starting\
+    \ and not continue to produce zeros)."
 
 file_format: 1

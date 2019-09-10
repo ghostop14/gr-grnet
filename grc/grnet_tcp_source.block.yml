@@ -6,17 +6,27 @@ category: '[GrNet Networking Tools]'
 
 parameters:
 -   id: type
-    label: Input Type
+    label: Output Type
     dtype: enum
     options: [complex, float, int, short, byte]
     option_attributes:
         size: [gr.sizeof_gr_complex, gr.sizeof_float, gr.sizeof_int, gr.sizeof_short,
             gr.sizeof_char]
     hide: part
+-   id: addr
+    label: Address
+    dtype: string
+    default: 127.0.0.1
 -   id: port
     label: Port
     dtype: int
     default: '0'
+-   id: server
+    label: Mode
+    dtype: enum
+    default: 'True'
+    options: ['True', 'False']
+    option_labels: [Server, Client]
 -   id: vlen
     label: Vec Length
     dtype: int
@@ -32,6 +42,14 @@ asserts:
 
 templates:
     imports: import grnet
-    make: grnet.tcp_source(${type.size}, ${vlen}, ${port})
+    make: "grnet.tcp_source.tcp_source(\n\titemsize=${type.size}*${vlen},\n\taddr=${addr},\n\
+        \tport=${port},\n\tserver=${server},\n)"
+
+documentation: "NOTE: This block is the original GNU Radio TCP Source block, incorporated\
+    \ here due to deprecation.  Attempts were made to rewrite this block with boost,\
+    \ however boost would lose data and the root cause was never uncovered.  May be\
+    \ why GNU Radio chose to implement this in Python as well.\n\t\nIn client mode,\
+    \ we attempt to connect to a server at the given address and port. In server mode,\
+    \ we bind a socket to the given address and port and accept the first client."
 
 file_format: 1

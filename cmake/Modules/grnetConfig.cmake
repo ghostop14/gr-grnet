@@ -22,9 +22,10 @@ FIND_LIBRARY(
           /usr/local/lib64
           /usr/lib
           /usr/lib64
-)
+          )
+
+include("${CMAKE_CURRENT_LIST_DIR}/grnetTarget.cmake")
 
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(GRNET DEFAULT_MSG GRNET_LIBRARIES GRNET_INCLUDE_DIRS)
 MARK_AS_ADVANCED(GRNET_LIBRARIES GRNET_INCLUDE_DIRS)
-

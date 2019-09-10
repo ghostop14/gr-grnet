@@ -22,49 +22,40 @@ parameters:
     dtype: int
     default: '2000'
 -   id: header
-    label: Header/CRC
+    label: Header
     dtype: enum
-    options: ['0', '1', '2', '3']
-    option_labels: [None, 32-bit Sequence Number, Sequence + 32-bit data size, 'Sequence,data
-            size, and trailing crc32 checksum']
--   id: vlen
-    label: Vec Length
-    dtype: int
-    default: '1'
-    hide: ${ 'part' if vlen == 1 else 'none' }
+    options: ['0', '1', '2', '4']
+    option_labels: [None, 64-bit Sequence Number, Sequence + 16-bit data size, CHDR
+            (64-bit)]
 -   id: payloadsize
-    label: Payload Size
+    label: UDP Packet Data Size
     dtype: int
     default: '1472'
 -   id: send_eof
     label: Send Null Packet as EOF
     dtype: enum
-    options: ['True', 'False']
-    option_labels: ['Yes', 'No']
+    options: ['False', 'True']
+    option_labels: ['No', 'Yes']
 
 inputs:
 -   domain: stream
     dtype: ${ type }
-    vlen: ${ vlen }
 asserts:
-- ${ vlen > 0 }
 - ${ port > 0 }
 - ${ payloadsize > 0 }
 
 templates:
     imports: import grnet
-    make: grnet.udp_sink(${type.size}, ${vlen}, ${addr}, ${port},${header},${payloadsize},${send_eof})
+    make: grnet.udp_sink(${type.size}, 1, ${addr}, ${port},${header},${payloadsize},${send_eof})
 
 documentation: "This block provides basic UDP data transmission capabilities with\
     \ a few additional features for processing in custom receiving applications. \
-    \ \nA header can be added that provides 4 0xFF bytes to form a sync word along\
-    \ with a packet sequence number for detecting out-of-sequence \npackets as well\
-    \ as a packet size.  A 64-bit CRC field based on zlib's crc32 function can also\
-    \ be added to the end of the packets for integrity checking.  \nNote that payload\
-    \ size impacts the overall size of a single UDP packet.  For a normal network,\
-    \ a payload size of 1472 (1500-28 for UDP headers) represents the max size for\
-    \ a standard UDP packet.  \nFor a Jumbo frames 8972 can be used (9000-28).  Be\
-    \ careful adjusting this parameter as you could inadvertently cause unnecessary\
-    \ packet fragmentation and reconstruction."
+    \ \nA header can be added in various formats for tracking.  For instance all headers\
+    \ also provide a sequence number that can be used to identify gaps in packets.\
+    \  \nNote that payload size impacts the overall size of a single UDP packet. \
+    \ For a normal network, a payload size of 1472 (1500-28 for UDP headers) represents\
+    \ the max size for a standard UDP packet.  \nFor a Jumbo frames 8972 can be used\
+    \ (9000-28).  Be careful adjusting this parameter as you could inadvertently cause\
+    \ unnecessary packet fragmentation and reconstruction."
 
 file_format: 1

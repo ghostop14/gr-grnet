@@ -1,17 +1,17 @@
 /* -*- c++ -*- */
-/*
+/* 
  * Copyright 2017 ghostop14.
- *
+ * 
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3, or (at your option)
  * any later version.
- *
+ * 
  * This software is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this software; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
@@ -24,19 +24,34 @@
 #include <grnet/udp_source.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <queue>
+// #include <queue>
+#include <boost/circular_buffer.hpp>
 
-#include <grnet/udpHeaderTypes.h>
+#include "packet_headers.h"
 
 namespace gr {
   namespace grnet {
 
-    class udp_source_impl : public udp_source
+    class GRNET_API udp_source_impl : public udp_source
     {
-     private:
+     protected:
         size_t d_itemsize;
         size_t d_veclen;
         size_t d_block_size;
+
+        bool d_notifyMissed;
+        bool d_sourceZeros;
+        int d_partialFrameCounter;
+
+    	int d_port;
+        int d_header_type;
+        int d_header_size;
+        uint16_t d_payloadsize;
+        int d_precompDataSize;
+        int d_precompDataOverItemSize;
+
+        uint64_t d_seq_num;
+        unsigned char *localBuffer;
 
         boost::system::error_code ec;
 
@@ -45,19 +60,21 @@ namespace gr {
         boost::asio::ip::udp::socket *udpsocket;
 
         boost::asio::streambuf read_buffer;
-    	std::queue<char> localQueue;
+    	// std::queue<unsigned char> localQueue;
+    	boost::circular_buffer<unsigned char> *localQueue;
 
         boost::mutex d_mutex;
 
-    	int maxSize;
+        uint64_t getHeaderSeqNum();
+
      public:
-      udp_source_impl(size_t itemsize,size_t vecLen, int port);
+      udp_source_impl(size_t itemsize,size_t vecLen, int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros);
       ~udp_source_impl();
 
       bool stop();
 
       size_t dataAvailable();
-      size_t netDataAvailable();
+      inline size_t netDataAvailable();
 
       // Where all the action really happens
       int work_test(int noutput_items,
@@ -72,3 +89,4 @@ namespace gr {
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_udp_source_impl_H */
+

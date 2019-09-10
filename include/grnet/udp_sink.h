@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2017 ghostop14.
+ * Copyright 2019 ghostop14.
  *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,13 +18,10 @@
  * Boston, MA 02110-1301, USA.
  */
 
-
 #ifndef INCLUDED_GRNET_UDP_SINK_H
 #define INCLUDED_GRNET_UDP_SINK_H
 
 #include <grnet/api.h>
-#include <grnet/udpHeaderTypes.h>
-
 #include <gnuradio/sync_block.h>
 
 namespace gr {
@@ -48,11 +45,11 @@ namespace gr {
        * class. grnet::udp_sink::make is the public interface for
        * creating new instances.
        */
-      static sptr make(size_t itemsize,size_t vecLen, const std::string &host, int port,int headerType,int payloadsize,bool send_eof);
+      static sptr make(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType,int payloadsize,bool send_eof);
     };
 
   } // namespace grnet
 } // namespace gr
 
-#endif /* INCLUDED_GRNET_TCP_SINK_H */
+#endif /* INCLUDED_GRNET_UDP_SINK_H */
 

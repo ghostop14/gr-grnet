@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<?grc format='1' created='3.7.12'?>
+<?grc format='1' created='3.7.13'?>
 <flow_graph>
   <timestamp>Wed Apr 12 11:50:45 2017</timestamp>
   <block>
@@ -73,12 +73,20 @@
       <value>True</value>
     </param>
     <param>
+      <key>sizing_mode</key>
+      <value>fixed</value>
+    </param>
+    <param>
       <key>thread_safe_setters</key>
       <value></value>
     </param>
     <param>
       <key>title</key>
       <value></value>
+    </param>
+    <param>
+      <key>placement</key>
+      <value>(0,0)</value>
     </param>
   </block>
   <block>
@@ -151,7 +159,7 @@
     </param>
     <param>
       <key>_enabled</key>
-      <value>0</value>
+      <value>1</value>
     </param>
     <param>
       <key>_coordinate</key>
@@ -182,7 +190,7 @@
     </param>
     <param>
       <key>_enabled</key>
-      <value>0</value>
+      <value>1</value>
     </param>
     <param>
       <key>_coordinate</key>
@@ -303,6 +311,10 @@
       <value>0</value>
     </param>
     <param>
+      <key>header</key>
+      <value>0</value>
+    </param>
+    <param>
       <key>id</key>
       <value>grnet_udp_source_0</value>
     </param>
@@ -319,19 +331,27 @@
       <value>0</value>
     </param>
     <param>
+      <key>notifyMissed</key>
+      <value>False</value>
+    </param>
+    <param>
       <key>port</key>
       <value>2000</value>
     </param>
     <param>
-      <key>vlen</key>
-      <value>1</value>
+      <key>srcZeros</key>
+      <value>False</value>
+    </param>
+    <param>
+      <key>payloadsize</key>
+      <value>1472</value>
     </param>
   </block>
   <block>
     <key>qtgui_freq_sink_x</key>
     <param>
       <key>autoscale</key>
-      <value>False</value>
+      <value>True</value>
     </param>
     <param>
       <key>average</key>

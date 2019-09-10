@@ -19,16 +19,16 @@ parameters:
     options: ['1', '2']
     option_labels: [Client, Server]
     option_attributes:
-        hide_specific: ['', all]
+        hide_specific: [none, all]
 -   id: addr
     label: Address
     dtype: string
-    default: 127.0.0.1
+    default: '127.0.0.1'
     hide: ${ mode.hide_specific }
 -   id: port
     label: Port
     dtype: int
-    default: '0'
+    default: '2000'
 -   id: vlen
     label: Vec Length
     dtype: int
