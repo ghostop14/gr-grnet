@@ -1,20 +1,20 @@
 # gr-grnet
-GNURadio TCP and UDP source and sink blocks completely rewritten in C++ with Boost.  The UDP block has some additional header/crc options that can be optionally enabled as well:
+GNURadio TCP and UDP source and sink blocks completely rewritten in C++ with Boost.  The UDP block has some additional header options that can be optionally enabled as well:
 
 Header/CRC
 
 None (raw byte stream)
 
-0xFFFFFFFF sync + leading 32-bit sequence number
+64-bit sequence numbers
 
-sync + leading 32-bit sequence number + 32-bit data size
+64-bit sequence numbers + 16-bit data size
 
-sync + leading 32-bit sequence number + 32-bit data size + trailing crc32 (note this will be a 64-bit unsigned long)
+CHDR (64-bit)
 
 
 
 ## Building
-This module requires zlib for the crc32 calculations in the UDP module.  You can install it with 'apt-get install zlib1g-dev' if it's not already present.
+This module requires zlib for the crc32 calculations in the UDP module and libpcap for the PCAPUDPSource block.  You can install them with 'apt-get install zlib1g-dev libpcap-dev' if it's not already present.
 
 
 Build is pretty standard:
