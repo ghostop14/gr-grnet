@@ -43,6 +43,8 @@ namespace gr {
         bool d_sourceZeros;
         int d_partialFrameCounter;
 
+        bool is_ipv6;
+
     	int d_port;
         int d_header_type;
         int d_header_size;
@@ -68,7 +70,7 @@ namespace gr {
         uint64_t getHeaderSeqNum();
 
      public:
-      udp_source_impl(size_t itemsize,size_t vecLen, int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros);
+      udp_source_impl(size_t itemsize,size_t vecLen, int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros, bool ipv6);
       ~udp_source_impl();
 
       bool stop();

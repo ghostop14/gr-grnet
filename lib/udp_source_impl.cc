@@ -29,19 +29,21 @@ namespace gr {
   namespace grnet {
 
     udp_source::sptr
-    udp_source::make(size_t itemsize,size_t vecLen,int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros)
+    udp_source::make(size_t itemsize,size_t vecLen,int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros, bool ipv6)
     {
       return gnuradio::get_initial_sptr
-        (new udp_source_impl(itemsize, vecLen,port,headerType,payloadsize,notifyMissed,sourceZeros));
+        (new udp_source_impl(itemsize, vecLen,port,headerType,payloadsize,notifyMissed,sourceZeros,ipv6));
     }
 
     /*
      * The private constructor
      */
-    udp_source_impl::udp_source_impl(size_t itemsize,size_t vecLen,int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros)
+    udp_source_impl::udp_source_impl(size_t itemsize,size_t vecLen,int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros, bool ipv6)
       : gr::sync_block("udp_source",
               gr::io_signature::make(0, 0, 0),gr::io_signature::make(1, 1, itemsize*vecLen))
     {
+    	is_ipv6 = ipv6;
+
     	d_itemsize = itemsize;
     	d_veclen = vecLen;
 
@@ -114,7 +116,11 @@ namespace gr {
         boost::asio::ip::udp::resolver::query query(s__host, s__port,
             boost::asio::ip::resolver_query_base::passive);
         */
-        d_endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port);
+
+    	if (is_ipv6)
+    		d_endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v6(), port);
+    	else
+        	d_endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port);
 
         try {
     		udpsocket = new boost::asio::ip::udp::socket(d_io_service,d_endpoint);

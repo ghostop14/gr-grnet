@@ -37,6 +37,7 @@ namespace gr {
         size_t d_veclen;
         size_t d_block_size;
         int d_sinkmode;
+        bool is_ipv6;
 
         boost::system::error_code ec;
 

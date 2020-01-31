@@ -37,6 +37,11 @@ parameters:
     dtype: enum
     options: ['False', 'True']
     option_labels: ['No', 'Yes']
+-   id: ipv6
+    label: IPv4/IPv6
+    dtype: enum
+    options: ['False', 'True']
+    option_labels: ['IPv4', 'IPv6']
 
 outputs:
 -   domain: stream
@@ -44,7 +49,7 @@ outputs:
 
 templates:
     imports: import grnet
-    make: grnet.udp_source(${type.size}, 1, ${port},${header},${payloadsize},${notifyMissed},${srcZeros})
+    make: grnet.udp_source(${type.size}, 1, ${port},${header},${payloadsize},${notifyMissed},${srcZeros},${ipv6})
 
 documentation: "This block listens for traffic on the specified UDP port and outputs\
     \ the specified data type.  Note that the header setting and payload size should\

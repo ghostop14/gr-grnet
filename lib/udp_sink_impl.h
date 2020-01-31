@@ -39,6 +39,7 @@ namespace gr {
         size_t d_veclen;
         size_t d_block_size;
 
+        bool is_ipv6;
         int d_header_type;
         int d_header_size;
         uint16_t d_payloadsize;

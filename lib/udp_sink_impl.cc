@@ -54,6 +54,11 @@ namespace gr {
     	// Now for local nets that support jumbo frames, the max payload size is 8972 (9000-the UDP 28-byte header)
     	// Same rules apply with fragmentation.
 
+    	if (host.find(":") != std::string::npos)
+    		is_ipv6 = true;
+    	else
+    		is_ipv6 = false;
+
     	d_port = port;
 
     	d_header_size = 0;
@@ -95,17 +100,26 @@ namespace gr {
 
     	localBuffer = new unsigned char[d_payloadsize];
 
+		udpsocket = new boost::asio::ip::udp::socket(d_io_service);
+
         std::string s__port = (boost::format("%d") % port).str();
         std::string s__host = host.empty() ? std::string("localhost") : host;
         boost::asio::ip::udp::resolver resolver(d_io_service);
-        boost::asio::ip::udp::resolver::query query(s__host, s__port,
-            boost::asio::ip::resolver_query_base::passive);
-        d_endpoint = *resolver.resolve(query);
+        boost::asio::ip::udp::resolver::query query(s__host, s__port, boost::asio::ip::resolver_query_base::passive);
 
-		udpsocket = new boost::asio::ip::udp::socket(d_io_service);
+        boost::system::error_code err;
+        d_endpoint = *resolver.resolve(query,err);
 
-		// Open will let you transmit UDP without "connecting" to the remote system(s)
-		udpsocket->open(boost::asio::ip::udp::v4());
+        if (err) {
+        	throw std::runtime_error(std::string("[UDP Sink] Unable to resolve host/IP: ") + err.message());
+        }
+
+    	if (is_ipv6) {
+			udpsocket->open(boost::asio::ip::udp::v6());
+    	}
+    	else {
+			udpsocket->open(boost::asio::ip::udp::v4());
+    	}
 
 		int outMultiple = (d_payloadsize - d_header_size) / d_block_size;
 

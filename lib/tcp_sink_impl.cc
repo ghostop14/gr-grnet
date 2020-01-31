@@ -46,20 +46,34 @@ namespace gr {
     {
     	d_block_size = d_itemsize * d_veclen;
 
+    	if (strHost.find(":") != std::string::npos)
+    		is_ipv6 = true;
+    	else
+    		is_ipv6 = false;
+
     	if (d_sinkmode==TCPSINKMODE_CLIENT) {
-        	std::cout << "TCP Sink connecting to " << host << ":" << port << std::endl;
+        	std::cout << "TCP Sink connecting to " << host << " on port " << port << std::endl;
+
+            boost::system::error_code err;
+        	tcpsocket = new boost::asio::ip::tcp::socket(d_io_service);
 
             std::string s__port = (boost::format("%d") % port).str();
             std::string s__host = host; // host.empty() ? std::string("localhost") : host;
             boost::asio::ip::tcp::resolver resolver(d_io_service);
-            boost::asio::ip::tcp::resolver::query query(s__host, s__port,
-                boost::asio::ip::resolver_query_base::passive);
-            d_endpoint = *resolver.resolve(query);
+            boost::asio::ip::tcp::resolver::query query(s__host, s__port, boost::asio::ip::resolver_query_base::passive);
 
-    		tcpsocket = new boost::asio::ip::tcp::socket(d_io_service);
+            d_endpoint = *resolver.resolve(query,err);
 
-    		// this will block here.
-        	tcpsocket->connect(d_endpoint);
+            if (err) {
+            	throw std::runtime_error(std::string("[TCP Sink] Unable to resolve host/IP: ") + err.message());
+            }
+
+        	tcpsocket->connect(d_endpoint,err);
+            if (err) {
+            	//std::cout << "[TCP Sink] Error: " << err.message().c_str() << std::endl;
+            	throw std::runtime_error(std::string("Connection error: ") + err.message());
+            }
+
 
         	bConnected = true;
 
@@ -98,44 +112,23 @@ namespace gr {
     }
 
     void tcp_sink_impl::connect(bool initialConnection) {
-    	/*
-        std::string s__port = (boost::format("%d") % d_port).str();
-        std::string s__host = "0.0.0.0";
-        boost::asio::ip::tcp::resolver resolver(d_io_service);
-        boost::asio::ip::tcp::resolver::query query(s__host, s__port,
-            boost::asio::ip::resolver_query_base::passive);
-        d_endpoint = *resolver.resolve(query);
-		*/
-
         std::cout << "TCP Sink waiting for connection on port " << d_port << std::endl;
         if (initialConnection) {
-        	/*
-			d_acceptor.open(d_endpoint.protocol());
-			d_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-			d_acceptor.bind(d_endpoint);
-			*/
-	        d_acceptor = new boost::asio::ip::tcp::acceptor(d_io_service,boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(),d_port));
+        	if (is_ipv6)
+        		d_acceptor = new boost::asio::ip::tcp::acceptor(d_io_service,boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(),d_port));
+        	else
+        		d_acceptor = new boost::asio::ip::tcp::acceptor(d_io_service,boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(),d_port));
         }
         else {
 			d_io_service.reset();
         }
 
-        // d_acceptor.listen();
-
-        // switched to match boost example code with a copy/temp pointer
         if (tcpsocket) {
         	delete tcpsocket;
         }
-		tcpsocket = NULL; // new boost::asio::ip::tcp::socket(d_io_service);
-        // This will block while waiting for a connection
-        // d_acceptor.accept(*tcpsocket, d_endpoint);
+		tcpsocket = NULL;
 		bConnected = false;
 
-
-		// Good full example:
-		// http://www.boost.org/doc/libs/1_36_0/doc/html/boost_asio/example/echo/async_tcp_echo_server.cpp
-		// Boost tutorial
-		// http://www.boost.org/doc/libs/1_63_0/doc/html/boost_asio/tutorial.html
 
 		boost::asio::ip::tcp::socket *tmpSocket = new boost::asio::ip::tcp::socket(d_io_service);
 		d_acceptor->async_accept(*tmpSocket,

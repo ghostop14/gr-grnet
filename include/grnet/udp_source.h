@@ -45,7 +45,7 @@ namespace gr {
        * class. grnet::udp_source::make is the public interface for
        * creating new instances.
        */
-      static sptr make(size_t itemsize,size_t vecLen,int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros);
+      static sptr make(size_t itemsize,size_t vecLen,int port,int headerType,int payloadsize,bool notifyMissed, bool sourceZeros, bool ipv6);
     };
 
   } // namespace grnet

@@ -37,15 +37,35 @@ def _get_sock_fd(addr, port, server):
     Returns:
         the file descriptor number
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    is_ipv6 = False
+    
+    if ":" in addr:
+        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM,0)
+        is_ipv6 = True
+    else:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
     if server:
-        try:    
-            sock.bind((addr, port))
+        try:
+            if (is_ipv6):
+                bind_addr = addr.replace("::ffff:", "")
+                sock.bind((bind_addr, port))
+            else:    
+                sock.bind((addr, port))
+                
             print('[TCP Source] Waiting for a connection on port ' + str(port))
 
             sock.listen(1)
             clientsock, address = sock.accept()
             return os.dup(clientsock.fileno())
+        except OSError as e:
+            print('---------------------------------------------------------')
+            print('[TCP Source] ERROR: Unable to bind to port ' + str(port))
+            print('Error: ' + e.strerror)
+            if is_ipv6:
+                print('IPv6 HINT: If trying to start a local listener, try "::" for the address.')
+            print('---------------------------------------------------------')
+            return None
         except:
             print('---------------------------------------------------------')
             print('[TCP Source] ERROR: Unable to bind to port ' + str(port))
