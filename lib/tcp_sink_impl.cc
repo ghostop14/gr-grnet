@@ -82,9 +82,7 @@ tcp_sink_impl::tcp_sink_impl(size_t itemsize, size_t vecLen,
 
     tcpsocket->connect(d_endpoint, err);
     if (err) {
-      // std::cout << "[TCP Sink] Error: " << err.message().c_str() <<
-      // std::endl;
-      throw std::runtime_error(std::string("Connection error: ") +
+      throw std::runtime_error(std::string("[TCP Sink] Connection error: ") +
                                err.message());
     }
 

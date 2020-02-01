@@ -132,8 +132,8 @@ udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
   try {
     udpsocket = new boost::asio::ip::udp::socket(d_io_service, d_endpoint);
   } catch (const std::exception &ex) {
-    std::cerr << "[UDP Source] Error occurred: " << ex.what() << std::endl;
-    exit(1);
+    throw std::runtime_error(std::string("[UDP Source] Error occurred: ") +
+    		ex.what());
   }
 
   // Make sure we have a big enough buffer
