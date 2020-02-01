@@ -25,75 +25,70 @@
 #include <queue>
 
 #include "packet_headers.h"
-#include <pcap/pcap.h>
 #include <boost/thread/thread.hpp>
+#include <pcap/pcap.h>
 
 namespace gr {
-  namespace grnet {
+namespace grnet {
 
-    class PCAPUDPSource_impl : public PCAPUDPSource
-    {
-     private:
-        size_t d_itemsize;
-        size_t d_veclen;
-        size_t d_block_size;
+class PCAPUDPSource_impl : public PCAPUDPSource {
+private:
+  size_t d_itemsize;
+  size_t d_veclen;
+  size_t d_block_size;
 
-        bool d_notifyMissed;
+  bool d_notifyMissed;
 
-    	int d_port;
-        int d_header_type;
-        int d_header_size;
-        uint16_t d_payloadsize;
-        int d_precompDataSize;
-        int d_precompDataOverItemSize;
+  int d_port;
+  int d_header_type;
+  int d_header_size;
+  uint16_t d_payloadsize;
+  int d_precompDataSize;
+  int d_precompDataOverItemSize;
 
-        uint64_t d_seq_num;
-        unsigned char *localBuffer;
+  uint64_t d_seq_num;
+  unsigned char *localBuffer;
 
-    	std::queue<unsigned char> localQueue;
-    	std::queue<unsigned char> netQueue;
+  std::queue<unsigned char> localQueue;
+  std::queue<unsigned char> netQueue;
 
-    	std::string d_filename;
-    	bool d_repeat;
+  std::string d_filename;
+  bool d_repeat;
 
-        boost::mutex d_mutex;
-        boost::mutex fp_mutex;
-        boost::mutex d_netQueueMutex;
+  boost::mutex d_mutex;
+  boost::mutex fp_mutex;
+  boost::mutex d_netQueueMutex;
 
+  pcap_t *pcapFile;
 
-        pcap_t *pcapFile;
+  boost::thread *readThread = NULL;
+  bool threadRunning;
+  bool stopThread;
 
-        boost::thread *readThread = NULL;
-        bool threadRunning;
-        bool stopThread;
+  void runThread();
 
-        void runThread();
+  void open();
+  void close();
+  void restart();
 
-        void open();
-        void close();
-        void restart();
+  uint64_t getHeaderSeqNum();
 
-        uint64_t getHeaderSeqNum();
+public:
+  PCAPUDPSource_impl(size_t itemsize, int port, int headerType, int payloadsize,
+                     bool notifyMissed, const char *filename, bool repeat);
+  ~PCAPUDPSource_impl();
 
-     public:
-      PCAPUDPSource_impl(size_t itemsize,int port,int headerType,int payloadsize,bool notifyMissed, const char *filename, bool repeat);
-      ~PCAPUDPSource_impl();
+  bool stop();
 
-      bool stop();
+  size_t dataAvailable();
+  inline size_t netDataAvailable();
 
-      size_t dataAvailable();
-      inline size_t netDataAvailable();
+  // Where all the action really happens
+  int work(int noutput_items, gr_vector_const_void_star &input_items,
+           gr_vector_void_star &output_items);
+};
 
-      // Where all the action really happens
-      int work(
-              int noutput_items,
-              gr_vector_const_void_star &input_items,
-              gr_vector_void_star &output_items
-      );
-    };
-
-  } // namespace grnet
+} // namespace grnet
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_PCAPUDPSOURCE_IMPL_H */
-

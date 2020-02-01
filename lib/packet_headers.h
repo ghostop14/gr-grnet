@@ -12,19 +12,22 @@
 
 class HeaderSeqNum {
 public:
-	// size: 8 (64-bit)
-	uint64_t seqnum;
+  // size: 8 (64-bit)
+  uint64_t seqnum;
 
-	HeaderSeqNum() {seqnum=0;};
+  HeaderSeqNum() { seqnum = 0; };
 };
 
 class HeaderSeqPlusSize {
 public:
-	// size: 10 (80-bit)
-	uint64_t seqnum;
-	int16_t length;
+  // size: 10 (80-bit)
+  uint64_t seqnum;
+  int16_t length;
 
-	HeaderSeqPlusSize() {seqnum=0;length=0;};
+  HeaderSeqPlusSize() {
+    seqnum = 0;
+    length = 0;
+  };
 };
 
 // CHDR Definition: https://files.ettus.com/manual/page_rtp.html
@@ -52,22 +55,34 @@ Bit 63 	Bit 62 	Bit 61 	Bit 60 	Packet Type
 
 class CHDR {
 public:
-	// size: 8 (64-bit)
-	uint32_t sid;
-	uint16_t length;
-	int16_t seqPlusFlags;  // first 12 bits are sequence number,
+  // size: 8 (64-bit)
+  uint32_t sid;
+  uint16_t length;
+  int16_t seqPlusFlags; // first 12 bits are sequence number,
 
-	CHDR() { sid = 0; length = 0; seqPlusFlags = 0;};
+  CHDR() {
+    sid = 0;
+    length = 0;
+    seqPlusFlags = 0;
+  };
 
-	inline int getSeqNum(void) { return (seqPlusFlags & 0x0FFF); };
+  inline int getSeqNum(void) { return (seqPlusFlags & 0x0FFF); };
 
-	// if a timestamp is present, there's an 8-bit fractional timestamp following the header.
-	inline bool hasFractionalTimestamp(void) { int16_t timeBit; timeBit = seqPlusFlags & 0x2000; if (timeBit > 0) return true; else return false; };
+  // if a timestamp is present, there's an 8-bit fractional timestamp following
+  // the header.
+  inline bool hasFractionalTimestamp(void) {
+    int16_t timeBit;
+    timeBit = seqPlusFlags & 0x2000;
+    if (timeBit > 0)
+      return true;
+    else
+      return false;
+  };
 };
 
 class OldATAHeader {
 public:
-	// Total size: 64 bytes
+  // Total size: 64 bytes
   uint8_t group, version, bitsPerSample, binaryPoint;
   uint32_t order;
   uint8_t type, streams, polCode, hdrLen;
@@ -82,7 +97,11 @@ public:
   uint32_t flags;
   uint32_t len;
 
-  OldATAHeader() { seq = 0; freq = 0.0; sampleRate = 0.0; };
+  OldATAHeader() {
+    seq = 0;
+    freq = 0.0;
+    sampleRate = 0.0;
+  };
 };
 
 #endif /* LIB_PACKET_HEADERS_H_ */
