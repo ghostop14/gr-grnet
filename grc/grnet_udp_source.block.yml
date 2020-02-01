@@ -38,10 +38,10 @@ parameters:
     options: ['False', 'True']
     option_labels: ['No', 'Yes']
 -   id: ipv6
-    label: IPv4/IPv6
+    label: Enable IPv6 Support
     dtype: enum
     options: ['False', 'True']
-    option_labels: ['IPv4', 'IPv6']
+    option_labels: ['No', 'Yes']
 
 outputs:
 -   domain: stream
