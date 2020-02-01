@@ -24,8 +24,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <grnet/tcp_sink.h>
-
-// using namespace boost::asio::ip::tcp;
+#include <boost/thread/thread.hpp>
 
 namespace gr {
 namespace grnet {
@@ -48,20 +47,28 @@ protected:
 
   boost::mutex d_mutex;
 
-  std::string strHost;
+  boost::thread *listener_thread;
+  bool thread_running;
+  bool stop_thread;
+  bool start_new_listener;
+  bool initial_connection;
+
+  std::string d_host;
   int d_port;
 
-  bool bConnected;
+  bool d_connected;
 
-  void checkForDisconnect();
-  void connect(bool initialConnection);
+  virtual void checkForDisconnect();
+  virtual void connect(bool initialConnection);
+
+  virtual void run_listener();
 
 public:
   tcp_sink_impl(size_t itemsize, size_t vecLen, const std::string &host,
                 int port, int sinkMode = TCPSINKMODE_CLIENT);
   ~tcp_sink_impl();
 
-  bool stop();
+  virtual bool stop();
 
   void accept_handler(boost::asio::ip::tcp::socket *new_connection,
                       const boost::system::error_code &error);
