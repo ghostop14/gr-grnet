@@ -44,13 +44,13 @@ tcp_sink_impl::tcp_sink_impl(size_t itemsize, size_t vecLen,
                      gr::io_signature::make(0, 0, 0)),
       d_itemsize(itemsize), d_veclen(vecLen), d_port(port), d_host(host),
       d_sinkmode(sinkMode), thread_running(false), stop_thread(false),
-	  listener_thread(NULL), start_new_listener(false), initial_connection(true)
-{
+      listener_thread(NULL), start_new_listener(false),
+      initial_connection(true) {
   d_block_size = d_itemsize * d_veclen;
 
   if (d_sinkmode == TCPSINKMODE_CLIENT) {
-	  // In this mode, we're connecting to a remote TCP service listener
-	  // as a client.
+    // In this mode, we're connecting to a remote TCP service listener
+    // as a client.
     std::cout << "[TCP Sink] connecting to " << host << " on port " << port
               << std::endl;
 
@@ -94,28 +94,28 @@ tcp_sink_impl::tcp_sink_impl(size_t itemsize, size_t vecLen,
     boost::asio::socket_base::keep_alive option(true);
     tcpsocket->set_option(option);
   } else {
-	  // In this mode, we're starting a local port listener and waiting
-	  // for inbound connections.
-	  start_new_listener = true;
-	  listener_thread = new boost::thread(boost::bind(&tcp_sink_impl::run_listener, this));
+    // In this mode, we're starting a local port listener and waiting
+    // for inbound connections.
+    start_new_listener = true;
+    listener_thread =
+        new boost::thread(boost::bind(&tcp_sink_impl::run_listener, this));
   }
 }
 
 void tcp_sink_impl::run_listener() {
-	thread_running = true;
+  thread_running = true;
 
-	while (!stop_thread) {
-		// this will block
-		if (start_new_listener) {
-			start_new_listener = false;
-		    connect(initial_connection);
-		    initial_connection = false;
-		}
-		else
-			usleep(10);
-	}
+  while (!stop_thread) {
+    // this will block
+    if (start_new_listener) {
+      start_new_listener = false;
+      connect(initial_connection);
+      initial_connection = false;
+    } else
+      usleep(10);
+  }
 
-	thread_running = false;
+  thread_running = false;
 }
 
 void tcp_sink_impl::accept_handler(boost::asio::ip::tcp::socket *new_connection,
@@ -130,8 +130,8 @@ void tcp_sink_impl::accept_handler(boost::asio::ip::tcp::socket *new_connection,
     d_connected = true;
 
   } else {
-    std::cout << "[TCP Sink] Error code " << error << " accepting boost TCP session."
-              << std::endl;
+    std::cout << "[TCP Sink] Error code " << error
+              << " accepting boost TCP session." << std::endl;
 
     // Boost made a copy so we have to clean up
     delete new_connection;
@@ -168,9 +168,8 @@ void tcp_sink_impl::connect(bool initialConnection) {
   boost::asio::ip::tcp::socket *tmpSocket =
       new boost::asio::ip::tcp::socket(d_io_service);
   d_acceptor->async_accept(
-      *tmpSocket,
-      boost::bind(&tcp_sink_impl::accept_handler, this,
-                  tmpSocket, boost::asio::placeholders::error));
+      *tmpSocket, boost::bind(&tcp_sink_impl::accept_handler, this, tmpSocket,
+                              boost::asio::placeholders::error));
 
   if (initialConnection) {
     d_io_service.run();
@@ -185,10 +184,9 @@ void tcp_sink_impl::connect(bool initialConnection) {
 tcp_sink_impl::~tcp_sink_impl() { stop(); }
 
 bool tcp_sink_impl::stop() {
-	if (thread_running) {
-		stop_thread = true;
-		// listener_thread->join();
-	}
+  if (thread_running) {
+    stop_thread = true;
+  }
 
   if (tcpsocket) {
     tcpsocket->close();
@@ -203,6 +201,15 @@ bool tcp_sink_impl::stop() {
     delete d_acceptor;
     d_acceptor = NULL;
   }
+
+  if (listener_thread) {
+    while (thread_running)
+      usleep(5);
+
+    delete listener_thread;
+    listener_thread = NULL;
+  }
+
   return true;
 }
 
@@ -243,8 +250,8 @@ void tcp_sink_impl::checkForDisconnect() {
                                  tcpsocket->message_peek, ec);
   if ((boost::asio::error::eof == ec) ||
       (boost::asio::error::connection_reset == ec)) {
-    std::cout << "[TCP Sink] Disconnect detected on " << d_host << ":" << d_port << "."
-              << std::endl;
+    std::cout << "[TCP Sink] Disconnect detected on " << d_host << ":" << d_port
+              << "." << std::endl;
     tcpsocket->close();
     delete tcpsocket;
     tcpsocket = NULL;
@@ -252,7 +259,8 @@ void tcp_sink_impl::checkForDisconnect() {
     exit(1);
   } else {
     if (ec) {
-      std::cout << "[TCP Sink] Socket error " << ec << " detected." << std::endl;
+      std::cout << "[TCP Sink] Socket error " << ec << " detected."
+                << std::endl;
     }
   }
 }
@@ -297,11 +305,15 @@ int tcp_sink_impl::work(int noutput_items,
       bytesRemaining = 0;
 
       if (d_sinkmode == TCPSINKMODE_CLIENT) {
-          std::cout << "[TCP Sink] Server closed the connection.  Stopping processing. " << std::endl;
+        std::cout
+            << "[TCP Sink] Server closed the connection.  Stopping processing. "
+            << std::endl;
 
         return WORK_DONE;
       } else {
-        std::cout << "[TCP Sink] Client disconnected. Waiting for new connection." << std::endl;
+        std::cout
+            << "[TCP Sink] Client disconnected. Waiting for new connection."
+            << std::endl;
         // start waiting for another connection
         start_new_listener = true;
       }
