@@ -30,6 +30,7 @@ endif(NOT grnet_sources)
 # Include swig generation macros
 ########################################################################
 find_package(SWIG)
+find_package(PythonInterp 3)
 find_package(PythonLibs)
 if(NOT SWIG_FOUND OR NOT PYTHONLIBS_FOUND)
     return()
