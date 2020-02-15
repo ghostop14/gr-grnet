@@ -30,10 +30,10 @@ namespace grnet {
 
 udp_source::sptr udp_source::make(size_t itemsize, size_t vecLen, int port,
                                   int headerType, int payloadsize,
-                                  bool notifyMissed, bool sourceZeros,
-                                  bool ipv6) {
+                                  int udp_recv_buf_size, bool notifyMissed,
+                                  bool sourceZeros, bool ipv6) {
   return gnuradio::get_initial_sptr(
-      new udp_source_impl(itemsize, vecLen, port, headerType, payloadsize,
+      new udp_source_impl(itemsize, vecLen, port, headerType, payloadsize,udp_recv_buf_size,
                           notifyMissed, sourceZeros, ipv6));
 }
 
@@ -42,9 +42,13 @@ udp_source::sptr udp_source::make(size_t itemsize, size_t vecLen, int port,
  */
 udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
                                  int headerType, int payloadsize,
-                                 bool notifyMissed, bool sourceZeros, bool ipv6)
+                                 int udp_recv_buf_size, bool notifyMissed,
+                                 bool sourceZeros, bool ipv6)
     : gr::sync_block("udp_source", gr::io_signature::make(0, 0, 0),
                      gr::io_signature::make(1, 1, itemsize * vecLen)) {
+
+  d_udp_recv_buf_size = udp_recv_buf_size;
+
   is_ipv6 = ipv6;
 
   d_itemsize = itemsize;
@@ -133,12 +137,12 @@ udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
     udpsocket = new boost::asio::ip::udp::socket(d_io_service, d_endpoint);
   } catch (const std::exception &ex) {
     throw std::runtime_error(std::string("[UDP Source] Error occurred: ") +
-    		ex.what());
+                             ex.what());
   }
 
   // Make sure we have a big enough buffer
-  // boost::asio::socket_base::receive_buffer_size option(65535);
-  // udpsocket->set_option(option);
+  boost::asio::socket_base::receive_buffer_size option(d_udp_recv_buf_size);
+  udpsocket->set_option(option);
 
   int outMultiple = (d_payloadsize - d_header_size) / d_block_size;
 

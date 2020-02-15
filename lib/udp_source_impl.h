@@ -50,6 +50,7 @@ protected:
   uint16_t d_payloadsize;
   int d_precompDataSize;
   int d_precompDataOverItemSize;
+  int d_udp_recv_buf_size;
 
   uint64_t d_seq_num;
   unsigned char *localBuffer;
@@ -70,7 +71,7 @@ protected:
 
 public:
   udp_source_impl(size_t itemsize, size_t vecLen, int port, int headerType,
-                  int payloadsize, bool notifyMissed, bool sourceZeros,
+                  int payloadsize, int udp_recv_buf_size, bool notifyMissed, bool sourceZeros,
                   bool ipv6);
   ~udp_source_impl();
 
