@@ -24,17 +24,18 @@
 
 #include "udp_source_impl.h"
 #include <gnuradio/io_signature.h>
+#include <sstream>
 
 namespace gr {
 namespace grnet {
 
 udp_source::sptr udp_source::make(size_t itemsize, size_t vecLen, int port,
                                   int headerType, int payloadsize,
-                                  int udp_recv_buf_size, bool notifyMissed,
+                                  long udp_recv_buf_size, bool notifyMissed,
                                   bool sourceZeros, bool ipv6) {
   return gnuradio::get_initial_sptr(
-      new udp_source_impl(itemsize, vecLen, port, headerType, payloadsize,udp_recv_buf_size,
-                          notifyMissed, sourceZeros, ipv6));
+      new udp_source_impl(itemsize, vecLen, port, headerType, payloadsize,
+                          udp_recv_buf_size, notifyMissed, sourceZeros, ipv6));
 }
 
 /*
@@ -42,7 +43,7 @@ udp_source::sptr udp_source::make(size_t itemsize, size_t vecLen, int port,
  */
 udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
                                  int headerType, int payloadsize,
-                                 int udp_recv_buf_size, bool notifyMissed,
+                                 long udp_recv_buf_size, bool notifyMissed,
                                  bool sourceZeros, bool ipv6)
     : gr::sync_block("udp_source", gr::io_signature::make(0, 0, 0),
                      gr::io_signature::make(1, 1, itemsize * vecLen)) {
@@ -60,7 +61,7 @@ udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
   d_notifyMissed = notifyMissed;
   d_sourceZeros = sourceZeros;
   d_header_type = headerType;
-  ;
+
   d_payloadsize = payloadsize;
   d_partialFrameCounter = 0;
 
@@ -88,15 +89,15 @@ udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
     break;
 
   default:
-    std::cout << "[UDP Sink] Error: Unknown header type." << std::endl;
+    GR_LOG_ERROR(d_logger, "Unknown header type.");
     exit(1);
     break;
   }
 
   if (d_payloadsize < 8) {
-    std::cout << "[UDP Sink] Error: payload size is too small.  Must be at "
-                 "least 8 bytes once header/trailer adjustments are made."
-              << std::endl;
+    GR_LOG_ERROR(d_logger,
+                 "Payload size is too small.  Must be at "
+                 "least 8 bytes once header/trailer adjustments are made.");
     exit(1);
   }
 
@@ -117,14 +118,6 @@ udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
   }
 
   localQueue = new boost::circular_buffer<unsigned char>(maxCircBuffer);
-
-  /*
-  std::string s__port = (boost::format("%d") % port).str();
-  std::string s__host = "0.0.0.0";
-  boost::asio::ip::udp::resolver resolver(d_io_service);
-  boost::asio::ip::udp::resolver::query query(s__host, s__port,
-      boost::asio::ip::resolver_query_base::passive);
-  */
 
   if (is_ipv6)
     d_endpoint =
@@ -149,18 +142,9 @@ udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
   if (outMultiple == 1)
     outMultiple = 2; // Ensure we get pairs, for instance complex -> ichar pairs
 
-  /*
-boost::asio::ip::mtu option;
-udpsocket->get_option(option);
-size_t mtu = option.value();
-
-  std::cout << "[UDP Source] Listening for data on UDP port " << port << " MTU
-Size: " << mtu << "." << std::endl; //   Output multiple: " << outMultiple <<
-"." << std::endl;
-  */
-  std::cout
-      << "[UDP Source] Listening for data on UDP port " << port << "."
-      << std::endl; //   Output multiple: " << outMultiple << "." << std::endl;
+  std::stringstream msg_stream;
+  msg_stream << "Listening for data on UDP port " << port << ".";
+  GR_LOG_INFO(d_logger, msg_stream.str());
 
   gr::block::set_output_multiple(outMultiple);
 }
@@ -215,16 +199,10 @@ uint64_t udp_source_impl::getHeaderSeqNum() {
 
   switch (d_header_type) {
   case HEADERTYPE_SEQNUM: {
-    // HeaderSeqNum seqHeader;
-    // memcpy((void *)&seqHeader,(void *)localBuffer,d_header_size);
-    // retVal = seqHeader.seqnum;
     retVal = ((HeaderSeqNum *)localBuffer)->seqnum;
   } break;
 
   case HEADERTYPE_SEQPLUSSIZE: {
-    // HeaderSeqPlusSize seqHeaderPlusSize;
-    // memcpy((void *)&seqHeaderPlusSize,(void *)localBuffer,d_header_size);
-    // retVal = seqHeaderPlusSize.seqnum;
     retVal = ((HeaderSeqPlusSize *)localBuffer)->seqnum;
   } break;
 
@@ -233,16 +211,10 @@ uint64_t udp_source_impl::getHeaderSeqNum() {
     if (d_seq_num > 0x0FFF)
       d_seq_num = 1;
 
-    // CHDR chdr;
-    // memcpy((void *)&chdr,(void *)localBuffer,d_header_size);
-    // retVal = chdr.seqPlusFlags & 0x0FFF;
     retVal = ((CHDR *)localBuffer)->seqPlusFlags & 0x0FFF;
   } break;
 
   case HEADERTYPE_OLDATA: {
-    // OldATAHeader ataHeader;
-    // memcpy((void *)&ataHeader,(void *)localBuffer,d_header_size);
-    // retVal = ataHeader.seq;
     retVal = ((OldATAHeader *)localBuffer)->seq;
   } break;
   }
@@ -381,8 +353,10 @@ int udp_source_impl::work_test(int noutput_items,
   }
 
   if (skippedPackets > 0 && d_notifyMissed) {
-    std::cout << "[UDP source:" << d_port
-              << "] missed  packets: " << skippedPackets << std::endl;
+    std::stringstream msg_stream;
+    msg_stream << "[UDP source:" << d_port
+               << "] missed  packets: " << skippedPackets;
+    GR_LOG_WARN(d_logger, msg_stream.str());
   }
 
   // firstTime = false;
@@ -397,7 +371,6 @@ int udp_source_impl::work(int noutput_items,
   gr::thread::scoped_lock guard(d_mutex);
 
   static bool firstTime = true;
-  // static int testCount=0;
   static int underRunCounter = 0;
 
   int bytesAvailable = netDataAvailable();
@@ -461,9 +434,12 @@ int udp_source_impl::work(int noutput_items,
     d_partialFrameCounter++;
 
     if (d_partialFrameCounter >= 100) {
-      std::cout << "[UDP Source] Insufficient block data.  Check your sending "
-                   "app is using "
-                << d_payloadsize << " send blocks." << std::endl;
+      std::stringstream msg_stream;
+      msg_stream << "Insufficient block data.  Check your sending "
+                    "app is using "
+                 << d_payloadsize << " send blocks.";
+      GR_LOG_WARN(d_logger, msg_stream.str());
+
       // This is just a safety to clear in the case there's a hanging partial
       // packet. If we've lingered through a number of calls and we still don't
       // have any data, clear the stale data.
@@ -512,8 +488,7 @@ int udp_source_impl::work(int noutput_items,
   for (int curPacket = 0; curPacket < blocksRetrieved; curPacket++) {
     // Move a packet to our local buffer
     for (int curByte = 0; curByte < d_payloadsize; curByte++) {
-      localBuffer[curByte] = localQueue->at(0); // localQueue.front();
-                                                // localQueue.pop();
+      localBuffer[curByte] = localQueue->at(0);
       localQueue->pop_front();
     }
 
@@ -542,11 +517,11 @@ int udp_source_impl::work(int noutput_items,
   }
 
   if (skippedPackets > 0 && d_notifyMissed) {
-    std::cout << "[UDP Sink:" << d_port
-              << "] missed  packets: " << skippedPackets << std::endl;
+    std::stringstream msg_stream;
+    msg_stream << "[UDP source:" << d_port
+               << "] missed  packets: " << skippedPackets;
+    GR_LOG_WARN(d_logger, msg_stream.str());
   }
-
-  // firstTime = false;
 
   // If we had less data than requested, it'll be reflected in the return value.
   return itemsreturned;
