@@ -21,35 +21,33 @@
 #ifndef INCLUDED_GRNET_FIFOBUFFER_H
 #define INCLUDED_GRNET_FIFOBUFFER_H
 
-#include <grnet/api.h>
 #include <gnuradio/sync_block.h>
+#include <grnet/api.h>
 
 namespace gr {
-  namespace grnet {
+namespace grnet {
 
-    /*!
-     * \brief <+description of block+>
-     * \ingroup grnet
-     *
-     */
-    class GRNET_API FifoBuffer : virtual public gr::sync_block
-    {
-     public:
-      typedef boost::shared_ptr<FifoBuffer> sptr;
+/*!
+ * \brief <+description of block+>
+ * \ingroup grnet
+ *
+ */
+class GRNET_API FifoBuffer : virtual public gr::sync_block {
+public:
+  typedef boost::shared_ptr<FifoBuffer> sptr;
 
-      /*!
-       * \brief Return a shared_ptr to a new instance of grnet::FifoBuffer.
-       *
-       * To avoid accidental use of raw pointers, grnet::FifoBuffer's
-       * constructor is in a private implementation
-       * class. grnet::FifoBuffer::make is the public interface for
-       * creating new instances.
-       */
-      static sptr make(size_t itemsize,int minQueueLength);
-    };
+  /*!
+   * \brief Return a shared_ptr to a new instance of grnet::FifoBuffer.
+   *
+   * To avoid accidental use of raw pointers, grnet::FifoBuffer's
+   * constructor is in a private implementation
+   * class. grnet::FifoBuffer::make is the public interface for
+   * creating new instances.
+   */
+  static sptr make(size_t itemsize, int minQueueLength);
+};
 
-  } // namespace grnet
+} // namespace grnet
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_FIFOBUFFER_H */
-

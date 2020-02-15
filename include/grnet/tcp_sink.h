@@ -21,38 +21,37 @@
 #ifndef INCLUDED_GRNET_TCP_SINK_H
 #define INCLUDED_GRNET_TCP_SINK_H
 
-#include <grnet/api.h>
 #include <gnuradio/sync_block.h>
+#include <grnet/api.h>
 
 #define TCPSINKMODE_CLIENT 1
 #define TCPSINKMODE_SERVER 2
 
 namespace gr {
-  namespace grnet {
+namespace grnet {
 
-    /*!
-     * \brief <+description of block+>
-     * \ingroup grnet
-     *
-     */
-    class GRNET_API tcp_sink : virtual public gr::sync_block
-    {
-     public:
-      typedef boost::shared_ptr<tcp_sink> sptr;
+/*!
+ * \brief <+description of block+>
+ * \ingroup grnet
+ *
+ */
+class GRNET_API tcp_sink : virtual public gr::sync_block {
+public:
+  typedef boost::shared_ptr<tcp_sink> sptr;
 
-      /*!
-       * \brief Return a shared_ptr to a new instance of grnet::tcp_sink.
-       *
-       * To avoid accidental use of raw pointers, grnet::tcp_sink's
-       * constructor is in a private implementation
-       * class. grnet::tcp_sink::make is the public interface for
-       * creating new instances.
-       */
-      static sptr make(size_t itemsize,size_t vecLen,const std::string &host, int port,int sinkMode);
-    };
+  /*!
+   * \brief Return a shared_ptr to a new instance of grnet::tcp_sink.
+   *
+   * To avoid accidental use of raw pointers, grnet::tcp_sink's
+   * constructor is in a private implementation
+   * class. grnet::tcp_sink::make is the public interface for
+   * creating new instances.
+   */
+  static sptr make(size_t itemsize, size_t vecLen, const std::string &host,
+                   int port, int sinkMode);
+};
 
-  } // namespace grnet
+} // namespace grnet
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_TCP_SINK_H */
-

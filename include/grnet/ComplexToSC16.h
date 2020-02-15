@@ -21,35 +21,33 @@
 #ifndef INCLUDED_GRNET_COMPLEXTOSC16_H
 #define INCLUDED_GRNET_COMPLEXTOSC16_H
 
-#include <grnet/api.h>
 #include <gnuradio/sync_interpolator.h>
+#include <grnet/api.h>
 
 namespace gr {
-  namespace grnet {
+namespace grnet {
 
-    /*!
-     * \brief <+description of block+>
-     * \ingroup grnet
-     *
-     */
-    class GRNET_API ComplexToSC16 : virtual public gr::sync_interpolator
-    {
-     public:
-      typedef boost::shared_ptr<ComplexToSC16> sptr;
+/*!
+ * \brief <+description of block+>
+ * \ingroup grnet
+ *
+ */
+class GRNET_API ComplexToSC16 : virtual public gr::sync_interpolator {
+public:
+  typedef boost::shared_ptr<ComplexToSC16> sptr;
 
-      /*!
-       * \brief Return a shared_ptr to a new instance of grnet::ComplexToSC16.
-       *
-       * To avoid accidental use of raw pointers, grnet::ComplexToSC16's
-       * constructor is in a private implementation
-       * class. grnet::ComplexToSC16::make is the public interface for
-       * creating new instances.
-       */
-      static sptr make( );
-    };
+  /*!
+   * \brief Return a shared_ptr to a new instance of grnet::ComplexToSC16.
+   *
+   * To avoid accidental use of raw pointers, grnet::ComplexToSC16's
+   * constructor is in a private implementation
+   * class. grnet::ComplexToSC16::make is the public interface for
+   * creating new instances.
+   */
+  static sptr make();
+};
 
-  } // namespace grnet
+} // namespace grnet
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_COMPLEXTOSC16_H */
-

@@ -21,35 +21,34 @@
 #ifndef INCLUDED_GRNET_PCAPUDPSOURCE_H
 #define INCLUDED_GRNET_PCAPUDPSOURCE_H
 
-#include <grnet/api.h>
 #include <gnuradio/sync_block.h>
+#include <grnet/api.h>
 
 namespace gr {
-  namespace grnet {
+namespace grnet {
 
-    /*!
-     * \brief <+description of block+>
-     * \ingroup grnet
-     *
-     */
-    class GRNET_API PCAPUDPSource : virtual public gr::sync_block
-    {
-     public:
-      typedef boost::shared_ptr<PCAPUDPSource> sptr;
+/*!
+ * \brief <+description of block+>
+ * \ingroup grnet
+ *
+ */
+class GRNET_API PCAPUDPSource : virtual public gr::sync_block {
+public:
+  typedef boost::shared_ptr<PCAPUDPSource> sptr;
 
-      /*!
-       * \brief Return a shared_ptr to a new instance of grnet::PCAPUDPSource.
-       *
-       * To avoid accidental use of raw pointers, grnet::PCAPUDPSource's
-       * constructor is in a private implementation
-       * class. grnet::PCAPUDPSource::make is the public interface for
-       * creating new instances.
-       */
-      static sptr make(size_t itemsize,int port,int headerType,int payloadsize,bool notifyMissed, const char *filename, bool repeat);
-    };
+  /*!
+   * \brief Return a shared_ptr to a new instance of grnet::PCAPUDPSource.
+   *
+   * To avoid accidental use of raw pointers, grnet::PCAPUDPSource's
+   * constructor is in a private implementation
+   * class. grnet::PCAPUDPSource::make is the public interface for
+   * creating new instances.
+   */
+  static sptr make(size_t itemsize, int port, int headerType, int payloadsize,
+                   bool notifyMissed, const char *filename, bool repeat);
+};
 
-  } // namespace grnet
+} // namespace grnet
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_PCAPUDPSOURCE_H */
-

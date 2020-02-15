@@ -21,35 +21,34 @@
 #ifndef INCLUDED_GRNET_UDP_SINK_H
 #define INCLUDED_GRNET_UDP_SINK_H
 
-#include <grnet/api.h>
 #include <gnuradio/sync_block.h>
+#include <grnet/api.h>
 
 namespace gr {
-  namespace grnet {
+namespace grnet {
 
-    /*!
-     * \brief <+description of block+>
-     * \ingroup grnet
-     *
-     */
-    class GRNET_API udp_sink : virtual public gr::sync_block
-    {
-     public:
-      typedef boost::shared_ptr<udp_sink> sptr;
+/*!
+ * \brief <+description of block+>
+ * \ingroup grnet
+ *
+ */
+class GRNET_API udp_sink : virtual public gr::sync_block {
+public:
+  typedef boost::shared_ptr<udp_sink> sptr;
 
-      /*!
-       * \brief Return a shared_ptr to a new instance of grnet::udp_sink.
-       *
-       * To avoid accidental use of raw pointers, grnet::udp_sink's
-       * constructor is in a private implementation
-       * class. grnet::udp_sink::make is the public interface for
-       * creating new instances.
-       */
-      static sptr make(size_t itemsize,size_t vecLen,const std::string &host, int port,int headerType,int payloadsize,bool send_eof);
-    };
+  /*!
+   * \brief Return a shared_ptr to a new instance of grnet::udp_sink.
+   *
+   * To avoid accidental use of raw pointers, grnet::udp_sink's
+   * constructor is in a private implementation
+   * class. grnet::udp_sink::make is the public interface for
+   * creating new instances.
+   */
+  static sptr make(size_t itemsize, size_t vecLen, const std::string &host,
+                   int port, int headerType, int payloadsize, bool send_eof);
+};
 
-  } // namespace grnet
+} // namespace grnet
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_UDP_SINK_H */
-

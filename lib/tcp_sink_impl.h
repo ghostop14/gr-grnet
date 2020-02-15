@@ -23,8 +23,8 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <grnet/tcp_sink.h>
 #include <boost/thread/thread.hpp>
+#include <grnet/tcp_sink.h>
 
 namespace gr {
 namespace grnet {

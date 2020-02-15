@@ -68,7 +68,7 @@ blocks:
     bus_structure: null
     coordinate: [888, 152]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: blocks_probe_rate_0
   id: blocks_probe_rate
   parameters:
@@ -87,7 +87,7 @@ blocks:
     bus_structure: null
     coordinate: [616, 140]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: blocks_throttle_0
   id: blocks_throttle
   parameters:
@@ -144,7 +144,7 @@ blocks:
     alpha7: '1.0'
     alpha8: '1.0'
     alpha9: '1.0'
-    autoscale: 'True'
+    autoscale: 'False'
     average: '1.0'
     axislabels: 'True'
     bw: samp_rate
@@ -200,8 +200,8 @@ blocks:
     width8: '1'
     width9: '1'
     wintype: firdes.WIN_BLACKMAN_hARRIS
-    ymax: '-30'
-    ymin: '-60'
+    ymax: '0'
+    ymin: '-140'
   states:
     bus_sink: false
     bus_source: false

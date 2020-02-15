@@ -21,35 +21,33 @@
 #ifndef INCLUDED_GRNET_BYTESTOSC16_H
 #define INCLUDED_GRNET_BYTESTOSC16_H
 
-#include <grnet/api.h>
 #include <gnuradio/sync_decimator.h>
+#include <grnet/api.h>
 
 namespace gr {
-  namespace grnet {
+namespace grnet {
 
-    /*!
-     * \brief <+description of block+>
-     * \ingroup grnet
-     *
-     */
-    class GRNET_API BytesToSC16 : virtual public gr::sync_decimator
-    {
-     public:
-      typedef boost::shared_ptr<BytesToSC16> sptr;
+/*!
+ * \brief <+description of block+>
+ * \ingroup grnet
+ *
+ */
+class GRNET_API BytesToSC16 : virtual public gr::sync_decimator {
+public:
+  typedef boost::shared_ptr<BytesToSC16> sptr;
 
-      /*!
-       * \brief Return a shared_ptr to a new instance of grnet::BytesToSC16.
-       *
-       * To avoid accidental use of raw pointers, grnet::BytesToSC16's
-       * constructor is in a private implementation
-       * class. grnet::BytesToSC16::make is the public interface for
-       * creating new instances.
-       */
-      static sptr make( );
-    };
+  /*!
+   * \brief Return a shared_ptr to a new instance of grnet::BytesToSC16.
+   *
+   * To avoid accidental use of raw pointers, grnet::BytesToSC16's
+   * constructor is in a private implementation
+   * class. grnet::BytesToSC16::make is the public interface for
+   * creating new instances.
+   */
+  static sptr make();
+};
 
-  } // namespace grnet
+} // namespace grnet
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_BYTESTOSC16_H */
-

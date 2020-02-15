@@ -21,35 +21,33 @@
 #ifndef INCLUDED_GRNET_SC16TOBYTES_H
 #define INCLUDED_GRNET_SC16TOBYTES_H
 
-#include <grnet/api.h>
 #include <gnuradio/sync_interpolator.h>
+#include <grnet/api.h>
 
 namespace gr {
-  namespace grnet {
+namespace grnet {
 
-    /*!
-     * \brief <+description of block+>
-     * \ingroup grnet
-     *
-     */
-    class GRNET_API SC16ToBytes : virtual public gr::sync_interpolator
-    {
-     public:
-      typedef boost::shared_ptr<SC16ToBytes> sptr;
+/*!
+ * \brief <+description of block+>
+ * \ingroup grnet
+ *
+ */
+class GRNET_API SC16ToBytes : virtual public gr::sync_interpolator {
+public:
+  typedef boost::shared_ptr<SC16ToBytes> sptr;
 
-      /*!
-       * \brief Return a shared_ptr to a new instance of grnet::SC16ToBytes.
-       *
-       * To avoid accidental use of raw pointers, grnet::SC16ToBytes's
-       * constructor is in a private implementation
-       * class. grnet::SC16ToBytes::make is the public interface for
-       * creating new instances.
-       */
-      static sptr make( );
-    };
+  /*!
+   * \brief Return a shared_ptr to a new instance of grnet::SC16ToBytes.
+   *
+   * To avoid accidental use of raw pointers, grnet::SC16ToBytes's
+   * constructor is in a private implementation
+   * class. grnet::SC16ToBytes::make is the public interface for
+   * creating new instances.
+   */
+  static sptr make();
+};
 
-  } // namespace grnet
+} // namespace grnet
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_SC16TOBYTES_H */
-

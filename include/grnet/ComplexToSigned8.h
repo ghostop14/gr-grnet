@@ -21,35 +21,33 @@
 #ifndef INCLUDED_GRNET_COMPLEXTOSIGNED8_H
 #define INCLUDED_GRNET_COMPLEXTOSIGNED8_H
 
-#include <grnet/api.h>
 #include <gnuradio/sync_interpolator.h>
+#include <grnet/api.h>
 
 namespace gr {
-  namespace grnet {
+namespace grnet {
 
-    /*!
-     * \brief <+description of block+>
-     * \ingroup grnet
-     *
-     */
-    class GRNET_API ComplexToSigned8 : virtual public gr::sync_interpolator
-    {
-     public:
-      typedef boost::shared_ptr<ComplexToSigned8> sptr;
+/*!
+ * \brief <+description of block+>
+ * \ingroup grnet
+ *
+ */
+class GRNET_API ComplexToSigned8 : virtual public gr::sync_interpolator {
+public:
+  typedef boost::shared_ptr<ComplexToSigned8> sptr;
 
-      /*!
-       * \brief Return a shared_ptr to a new instance of grnet::ComplexToSigned8.
-       *
-       * To avoid accidental use of raw pointers, grnet::ComplexToSigned8's
-       * constructor is in a private implementation
-       * class. grnet::ComplexToSigned8::make is the public interface for
-       * creating new instances.
-       */
-      static sptr make( );
-    };
+  /*!
+   * \brief Return a shared_ptr to a new instance of grnet::ComplexToSigned8.
+   *
+   * To avoid accidental use of raw pointers, grnet::ComplexToSigned8's
+   * constructor is in a private implementation
+   * class. grnet::ComplexToSigned8::make is the public interface for
+   * creating new instances.
+   */
+  static sptr make();
+};
 
-  } // namespace grnet
+} // namespace grnet
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_COMPLEXTOSIGNED8_H */
-

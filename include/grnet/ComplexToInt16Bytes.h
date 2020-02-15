@@ -21,35 +21,33 @@
 #ifndef INCLUDED_GRNET_COMPLEXTOINT16BYTES_H
 #define INCLUDED_GRNET_COMPLEXTOINT16BYTES_H
 
-#include <grnet/api.h>
 #include <gnuradio/sync_interpolator.h>
+#include <grnet/api.h>
 
 namespace gr {
-  namespace grnet {
+namespace grnet {
 
-    /*!
-     * \brief <+description of block+>
-     * \ingroup grnet
-     *
-     */
-    class GRNET_API ComplexToInt16Bytes : virtual public gr::sync_interpolator
-    {
-     public:
-      typedef boost::shared_ptr<ComplexToInt16Bytes> sptr;
+/*!
+ * \brief <+description of block+>
+ * \ingroup grnet
+ *
+ */
+class GRNET_API ComplexToInt16Bytes : virtual public gr::sync_interpolator {
+public:
+  typedef boost::shared_ptr<ComplexToInt16Bytes> sptr;
 
-      /*!
-       * \brief Return a shared_ptr to a new instance of grnet::ComplexToInt16Bytes.
-       *
-       * To avoid accidental use of raw pointers, grnet::ComplexToInt16Bytes's
-       * constructor is in a private implementation
-       * class. grnet::ComplexToInt16Bytes::make is the public interface for
-       * creating new instances.
-       */
-      static sptr make( );
-    };
+  /*!
+   * \brief Return a shared_ptr to a new instance of grnet::ComplexToInt16Bytes.
+   *
+   * To avoid accidental use of raw pointers, grnet::ComplexToInt16Bytes's
+   * constructor is in a private implementation
+   * class. grnet::ComplexToInt16Bytes::make is the public interface for
+   * creating new instances.
+   */
+  static sptr make();
+};
 
-  } // namespace grnet
+} // namespace grnet
 } // namespace gr
 
 #endif /* INCLUDED_GRNET_COMPLEXTOINT16BYTES_H */
-
