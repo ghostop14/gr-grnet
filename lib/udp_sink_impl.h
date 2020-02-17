@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2017 ghostop14.
+ * Copyright 2017,2019,2020 ghostop14.
  *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,25 +45,26 @@ protected:
   uint64_t d_seq_num;
   bool b_send_eof;
 
-  int d_precompDataSize;
-  int d_precompDataOverItemSize;
+  int d_precomp_datasize;
+  int d_precomp_data_overitemsize;
 
-  char tmpHeaderBuff[12]; // Largest header is 10 bytes so this should be big
-                          // enough.
+  char d_tmpheaderbuff[12]; // Largest header is 10 bytes
 
-  std::queue<char> localQueue;
-  unsigned char *localBuffer;
+  // A queue is required because we have 2 different timing
+  // domains: The network packets and the GR work()/scheduler
+  std::queue<char> d_localqueue;
+  unsigned char *d_localbuffer;
 
   boost::system::error_code ec;
 
   boost::asio::io_service d_io_service;
   boost::asio::ip::udp::endpoint d_endpoint;
-  boost::asio::ip::udp::socket *udpsocket;
+  boost::asio::ip::udp::socket *d_udpsocket;
 
   boost::mutex d_mutex;
 
   virtual void
-  buildHeader(); // returns header size.  Header is stored in tmpHeaderBuff
+  build_header(); // returns header size.  Header is stored in tmpHeaderBuff
 
 public:
   udp_sink_impl(size_t itemsize, size_t vecLen, const std::string &host,

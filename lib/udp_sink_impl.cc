@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2017 ghostop14.
+ * Copyright 2017,2019,2020 ghostop14.
  *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,15 +80,15 @@ udp_sink_impl::udp_sink_impl(size_t itemsize, size_t vecLen,
     break;
 
   default:
-    std::cout << "[UDP Sink] Error: Unknown header type." << std::endl;
+    GR_LOG_ERROR(d_logger, "Unknown header type.");
     exit(1);
     break;
   }
 
   if (d_payloadsize < 8) {
-    std::cout << "[UDP Sink] Error: payload size is too small.  Must be at "
-                 "least 8 bytes once header/trailer adjustments are made."
-              << std::endl;
+    GR_LOG_ERROR(d_logger,
+                 "Payload size is too small.  Must be at "
+                 "least 8 bytes once header/trailer adjustments are made.");
     exit(1);
   }
 
@@ -96,18 +96,18 @@ udp_sink_impl::udp_sink_impl(size_t itemsize, size_t vecLen,
 
   d_block_size = d_itemsize * d_veclen;
 
-  d_precompDataSize = d_payloadsize - d_header_size;
-  d_precompDataOverItemSize = d_precompDataSize / d_itemsize;
+  d_precomp_datasize = d_payloadsize - d_header_size;
+  d_precomp_data_overitemsize = d_precomp_datasize / d_itemsize;
 
-  localBuffer = new unsigned char[d_payloadsize];
+  d_localbuffer = new unsigned char[d_payloadsize];
 
-  udpsocket = new boost::asio::ip::udp::socket(d_io_service);
+  d_udpsocket = new boost::asio::ip::udp::socket(d_io_service);
 
-  std::string s__port = (boost::format("%d") % port).str();
-  std::string s__host = host.empty() ? std::string("localhost") : host;
+  std::string s_port = (boost::format("%d") % port).str();
+  std::string s_host = host.empty() ? std::string("localhost") : host;
   boost::asio::ip::udp::resolver resolver(d_io_service);
   boost::asio::ip::udp::resolver::query query(
-      s__host, s__port, boost::asio::ip::resolver_query_base::passive);
+      s_host, s_port, boost::asio::ip::resolver_query_base::passive);
 
   boost::system::error_code err;
   d_endpoint = *resolver.resolve(query, err);
@@ -129,17 +129,18 @@ udp_sink_impl::udp_sink_impl(size_t itemsize, size_t vecLen,
   }
 
   if (is_ipv6) {
-    udpsocket->open(boost::asio::ip::udp::v6());
+    d_udpsocket->open(boost::asio::ip::udp::v6());
   } else {
-    udpsocket->open(boost::asio::ip::udp::v4());
+    d_udpsocket->open(boost::asio::ip::udp::v4());
   }
 
-  int outMultiple = (d_payloadsize - d_header_size) / d_block_size;
+  int out_multiple = (d_payloadsize - d_header_size) / d_block_size;
 
-  if (outMultiple == 1)
-    outMultiple = 2; // Ensure we get pairs, for instance complex -> ichar pairs
+  if (out_multiple == 1)
+    out_multiple =
+        2; // Ensure we get pairs, for instance complex -> ichar pairs
 
-  gr::block::set_output_multiple(outMultiple);
+  gr::block::set_output_multiple(out_multiple);
 }
 
 /*
@@ -148,38 +149,38 @@ udp_sink_impl::udp_sink_impl(size_t itemsize, size_t vecLen,
 udp_sink_impl::~udp_sink_impl() { stop(); }
 
 bool udp_sink_impl::stop() {
-  if (udpsocket) {
-    gr::thread::scoped_lock guard(d_mutex);
+  if (d_udpsocket) {
+    gr::thread::scoped_lock guard(d_setlock);
 
     if (b_send_eof) {
       // Send a few zero-length packets to signal receiver we are done
       boost::array<char, 0> send_buf;
       for (int i = 0; i < 3; i++)
-        udpsocket->send_to(boost::asio::buffer(send_buf), d_endpoint);
+        d_udpsocket->send_to(boost::asio::buffer(send_buf), d_endpoint);
     }
 
-    udpsocket->close();
-    udpsocket = NULL;
+    d_udpsocket->close();
+    d_udpsocket = NULL;
 
     d_io_service.reset();
     d_io_service.stop();
   }
 
-  if (localBuffer) {
-    delete[] localBuffer;
-    localBuffer = NULL;
+  if (d_localbuffer) {
+    delete[] d_localbuffer;
+    d_localbuffer = NULL;
   }
 
   return true;
 }
 
-void udp_sink_impl::buildHeader() {
+void udp_sink_impl::build_header() {
   switch (d_header_type) {
   case HEADERTYPE_SEQNUM: {
     d_seq_num++;
     HeaderSeqNum seqHeader;
     seqHeader.seqnum = d_seq_num;
-    memcpy((void *)tmpHeaderBuff, (void *)&seqHeader, d_header_size);
+    memcpy((void *)d_tmpheaderbuff, (void *)&seqHeader, d_header_size);
   } break;
 
   case HEADERTYPE_SEQPLUSSIZE: {
@@ -187,7 +188,7 @@ void udp_sink_impl::buildHeader() {
     HeaderSeqPlusSize seqHeaderPlusSize;
     seqHeaderPlusSize.seqnum = d_seq_num;
     seqHeaderPlusSize.length = d_payloadsize;
-    memcpy((void *)tmpHeaderBuff, (void *)&seqHeaderPlusSize, d_header_size);
+    memcpy((void *)d_tmpheaderbuff, (void *)&seqHeaderPlusSize, d_header_size);
   } break;
 
   case HEADERTYPE_CHDR: {
@@ -201,7 +202,7 @@ void udp_sink_impl::buildHeader() {
     chdr.sid = d_port;
     chdr.length = d_payloadsize;
     chdr.seqPlusFlags = d_seq_num; // For now set all other flags to zero.
-    memcpy((void *)tmpHeaderBuff, (void *)&chdr, d_header_size);
+    memcpy((void *)d_tmpheaderbuff, (void *)&chdr, d_header_size);
   } break;
   }
 }
@@ -209,22 +210,22 @@ void udp_sink_impl::buildHeader() {
 int udp_sink_impl::work_test(int noutput_items,
                              gr_vector_const_void_star &input_items,
                              gr_vector_void_star &output_items) {
-  gr::thread::scoped_lock guard(d_mutex);
+  gr::thread::scoped_lock guard(d_setlock);
 
   long numBytesToTransmit = noutput_items * d_block_size;
   const char *in = (const char *)input_items[0];
 
   // Build a long local queue to pull from so we can break it up easier
   for (int i = 0; i < numBytesToTransmit; i++) {
-    localQueue.push(in[i]);
+    d_localqueue.push(in[i]);
   }
 
   // Local boost buffer for transmitting
   std::vector<boost::asio::const_buffer> transmitbuffer;
 
   // Let's see how many blocks are in the buffer
-  int bytesAvailable = localQueue.size();
-  long blocksAvailable = bytesAvailable / d_precompDataSize;
+  int bytesAvailable = d_localqueue.size();
+  long blocksAvailable = bytesAvailable / d_precomp_datasize;
 
   for (int curBlock = 0; curBlock < blocksAvailable; curBlock++) {
     // Clear the next transmit buffer
@@ -232,49 +233,49 @@ int udp_sink_impl::work_test(int noutput_items,
 
     // build our next header if we need it
     if (d_header_type != HEADERTYPE_NONE) {
-      buildHeader();
+      build_header();
 
       transmitbuffer.push_back(
-          boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size));
+          boost::asio::buffer((const void *)d_tmpheaderbuff, d_header_size));
     }
 
     // Fill the data buffer
-    for (int i = 0; i < d_precompDataSize; i++) {
-      localBuffer[i] = localQueue.front();
-      localQueue.pop();
+    for (int i = 0; i < d_precomp_datasize; i++) {
+      d_localbuffer[i] = d_localqueue.front();
+      d_localqueue.pop();
     }
 
     // Set up for transmit
     transmitbuffer.push_back(
-        boost::asio::buffer((const void *)localBuffer, d_precompDataSize));
+        boost::asio::buffer((const void *)d_localbuffer, d_precomp_datasize));
 
     // Send
-    udpsocket->send_to(transmitbuffer, d_endpoint);
+    d_udpsocket->send_to(transmitbuffer, d_endpoint);
   }
 
-  int itemsreturned = blocksAvailable * d_precompDataOverItemSize;
+  int itemsreturned = blocksAvailable * d_precomp_data_overitemsize;
   return itemsreturned;
 }
 
 int udp_sink_impl::work(int noutput_items,
                         gr_vector_const_void_star &input_items,
                         gr_vector_void_star &output_items) {
-  gr::thread::scoped_lock guard(d_mutex);
+  gr::thread::scoped_lock guard(d_setlock);
 
   long numBytesToTransmit = noutput_items * d_block_size;
   const char *in = (const char *)input_items[0];
 
   // Build a long local queue to pull from so we can break it up easier
   for (int i = 0; i < numBytesToTransmit; i++) {
-    localQueue.push(in[i]);
+    d_localqueue.push(in[i]);
   }
 
   // Local boost buffer for transmitting
   std::vector<boost::asio::const_buffer> transmitbuffer;
 
   // Let's see how many blocks are in the buffer
-  int bytesAvailable = localQueue.size();
-  long blocksAvailable = bytesAvailable / d_precompDataSize;
+  int bytesAvailable = d_localqueue.size();
+  long blocksAvailable = bytesAvailable / d_precomp_datasize;
 
   for (int curBlock = 0; curBlock < blocksAvailable; curBlock++) {
     // Clear the next transmit buffer
@@ -282,27 +283,27 @@ int udp_sink_impl::work(int noutput_items,
 
     // build our next header if we need it
     if (d_header_type != HEADERTYPE_NONE) {
-      buildHeader();
+      build_header();
 
       transmitbuffer.push_back(
-          boost::asio::buffer((const void *)tmpHeaderBuff, d_header_size));
+          boost::asio::buffer((const void *)d_tmpheaderbuff, d_header_size));
     }
 
     // Fill the data buffer
-    for (int i = 0; i < d_precompDataSize; i++) {
-      localBuffer[i] = localQueue.front();
-      localQueue.pop();
+    for (int i = 0; i < d_precomp_datasize; i++) {
+      d_localbuffer[i] = d_localqueue.front();
+      d_localqueue.pop();
     }
 
     // Set up for transmit
     transmitbuffer.push_back(
-        boost::asio::buffer((const void *)localBuffer, d_precompDataSize));
+        boost::asio::buffer((const void *)d_localbuffer, d_precomp_datasize));
 
     // Send
-    udpsocket->send_to(transmitbuffer, d_endpoint);
+    d_udpsocket->send_to(transmitbuffer, d_endpoint);
   }
 
-  int itemsreturned = blocksAvailable * d_precompDataOverItemSize;
+  int itemsreturned = blocksAvailable * d_precomp_data_overitemsize;
   return itemsreturned;
 }
 } /* namespace grnet */

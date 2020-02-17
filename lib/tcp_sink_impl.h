@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2017 ghostop14.
+ * Copyright 2017,2019,2020 ghostop14.
  *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,25 +41,22 @@ protected:
 
   boost::asio::io_service d_io_service;
   boost::asio::ip::tcp::endpoint d_endpoint;
-  // std::set<boost::asio::ip::tcp::socket *> tcpsocket;
-  boost::asio::ip::tcp::socket *tcpsocket = NULL;
+  boost::asio::ip::tcp::socket *d_tcpsocket = NULL;
   boost::asio::ip::tcp::acceptor *d_acceptor = NULL;
 
-  boost::mutex d_mutex;
-
-  boost::thread *listener_thread;
-  bool thread_running;
-  bool stop_thread;
-  bool start_new_listener;
-  bool initial_connection;
+  boost::thread *d_listener_thread;
+  bool d_thread_running;
+  bool d_stop_thread;
+  bool d_start_new_listener;
+  bool d_initial_connection;
 
   std::string d_host;
   int d_port;
 
   bool d_connected;
 
-  virtual void checkForDisconnect();
-  virtual void connect(bool initialConnection);
+  virtual void check_for_disconnect();
+  virtual void connect(bool initial_connection);
 
   virtual void run_listener();
 

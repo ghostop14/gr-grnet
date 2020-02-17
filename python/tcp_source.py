@@ -1,5 +1,5 @@
 #
-# Copyright 2009 Free Software Foundation, Inc.
+# Copyright 2009,2019,2020 Free Software Foundation, Inc.
 #
 # This file is part of GNU Radio
 #
@@ -19,9 +19,9 @@
 # Boston, MA 02110-1301, USA.
 #
 
-from gnuradio import gr, blocks
 import socket
 import os
+from gnuradio import gr, blocks
 
 def _get_sock_fd(addr, port, server):
     """
@@ -38,40 +38,38 @@ def _get_sock_fd(addr, port, server):
         the file descriptor number
     """
     is_ipv6 = False
-    
+
     if ":" in addr:
-        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM,0)
+        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM, 0)
         is_ipv6 = True
     else:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        
+
     if server:
         try:
-            if (is_ipv6):
+            if is_ipv6:
                 bind_addr = addr.replace("::ffff:", "")
                 sock.bind((bind_addr, port))
-            else:    
+            else:
                 sock.bind((addr, port))
-                
-            print('[TCP Source] Waiting for a connection on port ' + str(port))
+
+            gr.log.info('Waiting for a connection on port ' + str(port))
 
             sock.listen(1)
             clientsock, address = sock.accept()
             return os.dup(clientsock.fileno())
         except OSError as e:
-            print('---------------------------------------------------------')
-            print('[TCP Source] ERROR: Unable to bind to port ' + str(port))
-            print('Error: ' + e.strerror)
+            gr.log.error('Unable to bind to port ' + str(port))
+            gr.log.error('Error: ' + e.strerror)
+
             if is_ipv6:
-                print('IPv6 HINT: If trying to start a local listener, try "::" for the address.')
-            print('---------------------------------------------------------')
+                gr.log.error('IPv6 HINT: If trying to start a local listener, '
+                             'try "::" for the address.')
             return None
         except:
-            print('---------------------------------------------------------')
-            print('[TCP Source] ERROR: Unable to bind to port ' + str(port))
-            print('---------------------------------------------------------')
+            gr.log.error('Unable to bind to port ' + str(port))
             return None
-            
+
     else:
         sock.connect((addr, port))
         return os.dup(sock.fileno())

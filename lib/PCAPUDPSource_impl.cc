@@ -29,6 +29,7 @@
 #include <net/if.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
+#include <sstream>
 #include <unistd.h>
 
 namespace gr {
@@ -88,15 +89,16 @@ PCAPUDPSource_impl::PCAPUDPSource_impl(size_t itemsize, int port,
     break;
 
   default:
-    std::cout << "[UDP Sink] Error: Unknown header type." << std::endl;
-    exit(1);
+    GR_LOG_ERROR(d_logger, "Unknown header type.");
+    throw std::runtime_error("[PCAP UDP Source] Unknown header type");
     break;
   }
 
   if (d_payloadsize < 8) {
-    std::cout << "[UDP Sink] Error: payload size is too small.  Must be at "
-                 "least 8 bytes once header/trailer adjustments are made."
-              << std::endl;
+    GR_LOG_ERROR(d_logger,
+                 "Payload size is too small.  Must be at "
+                 "least 8 bytes once header/trailer adjustments are made.");
+    throw std::runtime_error("[PCAP UDP Source] Payload size is too small.");
     exit(1);
   }
 
@@ -110,9 +112,9 @@ PCAPUDPSource_impl::PCAPUDPSource_impl(size_t itemsize, int port,
   if (outMultiple == 1)
     outMultiple = 2; // Ensure we get pairs, for instance complex -> ichar pairs
 
-  std::cout
-      << "[PCAP UDP Source] Using " << d_filename << "."
-      << std::endl; //   Output multiple: " << outMultiple << "." << std::endl;
+  std::stringstream msg;
+  msg << "[PCAP UDP Source] Using " << d_filename;
+  GR_LOG_INFO(d_logger, msg.str());
 
   gr::block::set_output_multiple(outMultiple);
 
@@ -309,16 +311,10 @@ uint64_t PCAPUDPSource_impl::getHeaderSeqNum() {
 
   switch (d_header_type) {
   case HEADERTYPE_SEQNUM: {
-    // HeaderSeqNum seqHeader;
-    // memcpy((void *)&seqHeader,(void *)localBuffer,d_header_size);
-    // retVal = seqHeader.seqnum;
     retVal = ((HeaderSeqNum *)localBuffer)->seqnum;
   } break;
 
   case HEADERTYPE_SEQPLUSSIZE: {
-    // HeaderSeqPlusSize seqHeaderPlusSize;
-    // memcpy((void *)&seqHeaderPlusSize,(void *)localBuffer,d_header_size);
-    // retVal = seqHeaderPlusSize.seqnum;
     retVal = ((HeaderSeqPlusSize *)localBuffer)->seqnum;
   } break;
 
@@ -327,16 +323,10 @@ uint64_t PCAPUDPSource_impl::getHeaderSeqNum() {
     if (d_seq_num > 0x0FFF)
       d_seq_num = 1;
 
-    // CHDR chdr;
-    // memcpy((void *)&chdr,(void *)localBuffer,d_header_size);
-    // retVal = chdr.seqPlusFlags & 0x0FFF;
     retVal = ((CHDR *)localBuffer)->seqPlusFlags & 0x0FFF;
   } break;
 
   case HEADERTYPE_OLDATA: {
-    // OldATAHeader ataHeader;
-    // memcpy((void *)&ataHeader,(void *)localBuffer,d_header_size);
-    // retVal = ataHeader.seq;
     retVal = ((OldATAHeader *)localBuffer)->seq;
   } break;
   }
@@ -442,29 +432,11 @@ int PCAPUDPSource_impl::work(int noutput_items,
       uint64_t pktSeqNum = getHeaderSeqNum();
 
       if (d_seq_num > 0) { // d_seq_num will be 0 when this block starts
-        /*
-if (testCount == 0) {
-std::cout << "packet header=" << pktSeqNum << std::endl;
-std::cout << "d_seq_num=" << d_seq_num << std::endl;
-}
-else {
-if (testCount > 10)
-        testCount = 0;
-else
-testCount++;
-
-}
-         */
         if (pktSeqNum > d_seq_num) {
           // Ideally pktSeqNum = d_seq_num + 1.  Therefore this should do += 0
           // when no packets are dropped.
           skippedPackets += pktSeqNum - d_seq_num - 1;
         }
-        /*
-else {
-        // May have rolled over or source started over.  Just reset internally.
-}
-         */
 
         // Store as current for next pass.
         d_seq_num = pktSeqNum;
@@ -480,11 +452,11 @@ else {
   }
 
   if (skippedPackets > 0 && d_notifyMissed) {
-    std::cout << "[UDP Sink:" << d_port
-              << "] missed  packets: " << skippedPackets << std::endl;
+    std::stringstream msg;
+    msg << "[UDP Sink port " << d_port
+        << "] missed  packets: " << skippedPackets;
+    GR_LOG_WARN(d_logger, msg.str());
   }
-
-  // firstTime = false;
 
   // If we had less data than requested, it'll be reflected in the return value.
   return itemsreturned;

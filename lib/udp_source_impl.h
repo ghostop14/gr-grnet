@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2017 ghostop14.
+ * Copyright 2017,2019,2020 ghostop14.
  *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,9 +23,8 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <grnet/udp_source.h>
-// #include <queue>
 #include <boost/circular_buffer.hpp>
+#include <grnet/udp_source.h>
 
 #include "packet_headers.h"
 
@@ -59,15 +58,15 @@ protected:
 
   boost::asio::io_service d_io_service;
   boost::asio::ip::udp::endpoint d_endpoint;
-  boost::asio::ip::udp::socket *udpsocket;
+  boost::asio::ip::udp::socket *d_udpsocket;
 
-  boost::asio::streambuf read_buffer;
-  // std::queue<unsigned char> localQueue;
-  boost::circular_buffer<unsigned char> *localQueue;
+  boost::asio::streambuf d_read_buffer;
 
-  boost::mutex d_mutex;
+  // A queue is required because we have 2 different timing
+  // domains: The network packets and the GR work()/scheduler
+  boost::circular_buffer<unsigned char> *d_localqueue;
 
-  uint64_t getHeaderSeqNum();
+  uint64_t get_header_seqnum();
 
 public:
   udp_source_impl(size_t itemsize, size_t vecLen, int port, int headerType,
@@ -77,8 +76,8 @@ public:
 
   bool stop();
 
-  size_t dataAvailable();
-  inline size_t netDataAvailable();
+  size_t data_available();
+  inline size_t netdata_available();
 
   // Where all the action really happens
   int work_test(int noutput_items, gr_vector_const_void_star &input_items,

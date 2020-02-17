@@ -716,8 +716,8 @@ int ByteComplexDecimator_impl::work(int noutput_items,
   int octr = 0;
 
   while (octr < noutput_items) {
-    out[octr] = in[i];
-    out[octr + 1] = in[i + 1];
+    *out++ = in[i];
+    *out++ = in[i + 1];
 
     i += d_doubledecimation;
     octr += 2;

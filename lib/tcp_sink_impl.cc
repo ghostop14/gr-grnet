@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2017 ghostop14.
+ * Copyright 2017,2020 ghostop14.
  *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
 #include "tcp_sink_impl.h"
 #include <gnuradio/io_signature.h>
 
+#include <sstream>
+
 namespace gr {
 namespace grnet {
 
@@ -43,26 +45,26 @@ tcp_sink_impl::tcp_sink_impl(size_t itemsize, size_t vecLen,
                      gr::io_signature::make(1, 1, itemsize * vecLen),
                      gr::io_signature::make(0, 0, 0)),
       d_itemsize(itemsize), d_veclen(vecLen), d_port(port), d_host(host),
-      d_sinkmode(sinkMode), thread_running(false), stop_thread(false),
-      listener_thread(NULL), start_new_listener(false),
-      initial_connection(true) {
+      d_sinkmode(sinkMode), d_thread_running(false), d_stop_thread(false),
+      d_listener_thread(NULL), d_start_new_listener(false),
+      d_initial_connection(true) {
   d_block_size = d_itemsize * d_veclen;
 
   if (d_sinkmode == TCPSINKMODE_CLIENT) {
     // In this mode, we're connecting to a remote TCP service listener
     // as a client.
-    std::cout << "[TCP Sink] connecting to " << host << " on port " << port
-              << std::endl;
+    std::stringstream msg;
+
+    msg << "[TCP Sink] connecting to " << host << " on port " << port;
+    GR_LOG_INFO(d_logger, msg.str());
 
     boost::system::error_code err;
-    tcpsocket = new boost::asio::ip::tcp::socket(d_io_service);
+    d_tcpsocket = new boost::asio::ip::tcp::socket(d_io_service);
 
-    std::string s__port = (boost::format("%d") % port).str();
-    std::string s__host =
-        host; // host.empty() ? std::string("localhost") : host;
+    std::string s_port = (boost::format("%d") % port).str();
     boost::asio::ip::tcp::resolver resolver(d_io_service);
     boost::asio::ip::tcp::resolver::query query(
-        s__host, s__port, boost::asio::ip::resolver_query_base::passive);
+        d_host, s_port, boost::asio::ip::resolver_query_base::passive);
 
     d_endpoint = *resolver.resolve(query, err);
 
@@ -72,7 +74,7 @@ tcp_sink_impl::tcp_sink_impl(size_t itemsize, size_t vecLen,
           err.message());
     }
 
-    if (host.find(":") != std::string::npos)
+    if (d_host.find(":") != std::string::npos)
       is_ipv6 = true;
     else {
       // This block supports a check that a name rather than an IP is provided.
@@ -83,7 +85,7 @@ tcp_sink_impl::tcp_sink_impl(size_t itemsize, size_t vecLen,
         is_ipv6 = false;
     }
 
-    tcpsocket->connect(d_endpoint, err);
+    d_tcpsocket->connect(d_endpoint, err);
     if (err) {
       throw std::runtime_error(std::string("[TCP Sink] Connection error: ") +
                                err.message());
@@ -92,61 +94,64 @@ tcp_sink_impl::tcp_sink_impl(size_t itemsize, size_t vecLen,
     d_connected = true;
 
     boost::asio::socket_base::keep_alive option(true);
-    tcpsocket->set_option(option);
+    d_tcpsocket->set_option(option);
   } else {
     // In this mode, we're starting a local port listener and waiting
     // for inbound connections.
-    start_new_listener = true;
-    listener_thread =
+    d_start_new_listener = true;
+    d_listener_thread =
         new boost::thread(boost::bind(&tcp_sink_impl::run_listener, this));
   }
 }
 
 void tcp_sink_impl::run_listener() {
-  thread_running = true;
+  d_thread_running = true;
 
-  while (!stop_thread) {
+  while (!d_stop_thread) {
     // this will block
-    if (start_new_listener) {
-      start_new_listener = false;
-      connect(initial_connection);
-      initial_connection = false;
+    if (d_start_new_listener) {
+      d_start_new_listener = false;
+      connect(d_initial_connection);
+      d_initial_connection = false;
     } else
       usleep(10);
   }
 
-  thread_running = false;
+  d_thread_running = false;
 }
 
 void tcp_sink_impl::accept_handler(boost::asio::ip::tcp::socket *new_connection,
                                    const boost::system::error_code &error) {
   if (!error) {
-    std::cout << "[TCP Sink] Client connection received." << std::endl;
+    GR_LOG_INFO(d_logger, "Client connection received.");
+
     // Accept succeeded.
-    tcpsocket = new_connection;
+    d_tcpsocket = new_connection;
 
     boost::asio::socket_base::keep_alive option(true);
-    tcpsocket->set_option(option);
+    d_tcpsocket->set_option(option);
     d_connected = true;
 
   } else {
-    std::cout << "[TCP Sink] Error code " << error
-              << " accepting boost TCP session." << std::endl;
+    std::stringstream msg;
+    msg << "Error code " << error << " accepting TCP session.";
+    GR_LOG_ERROR(d_logger, msg.str());
 
     // Boost made a copy so we have to clean up
     delete new_connection;
 
     // safety settings.
     d_connected = false;
-    tcpsocket = NULL;
+    d_tcpsocket = NULL;
   }
 }
 
-void tcp_sink_impl::connect(bool initialConnection) {
-  std::cout << "[TCP Sink] Waiting for connection on port " << d_port
-            << std::endl;
+void tcp_sink_impl::connect(bool initial_connection) {
+  std::stringstream msg;
+  msg << "Waiting for connection on port " << d_port;
+  GR_LOG_INFO(d_logger, msg.str());
 
-  if (initialConnection) {
+  if (initial_connection) {
     if (is_ipv6)
       d_acceptor = new boost::asio::ip::tcp::acceptor(
           d_io_service,
@@ -159,10 +164,10 @@ void tcp_sink_impl::connect(bool initialConnection) {
     d_io_service.reset();
   }
 
-  if (tcpsocket) {
-    delete tcpsocket;
+  if (d_tcpsocket) {
+    delete d_tcpsocket;
   }
-  tcpsocket = NULL;
+  d_tcpsocket = NULL;
   d_connected = false;
 
   boost::asio::ip::tcp::socket *tmpSocket =
@@ -171,7 +176,7 @@ void tcp_sink_impl::connect(bool initialConnection) {
       *tmpSocket, boost::bind(&tcp_sink_impl::accept_handler, this, tmpSocket,
                               boost::asio::placeholders::error));
 
-  if (initialConnection) {
+  if (initial_connection) {
     d_io_service.run();
   } else {
     d_io_service.run();
@@ -184,14 +189,14 @@ void tcp_sink_impl::connect(bool initialConnection) {
 tcp_sink_impl::~tcp_sink_impl() { stop(); }
 
 bool tcp_sink_impl::stop() {
-  if (thread_running) {
-    stop_thread = true;
+  if (d_thread_running) {
+    d_stop_thread = true;
   }
 
-  if (tcpsocket) {
-    tcpsocket->close();
-    delete tcpsocket;
-    tcpsocket = NULL;
+  if (d_tcpsocket) {
+    d_tcpsocket->close();
+    delete d_tcpsocket;
+    d_tcpsocket = NULL;
   }
 
   d_io_service.reset();
@@ -202,12 +207,12 @@ bool tcp_sink_impl::stop() {
     d_acceptor = NULL;
   }
 
-  if (listener_thread) {
-    while (thread_running)
+  if (d_listener_thread) {
+    while (d_thread_running)
       usleep(5);
 
-    delete listener_thread;
-    listener_thread = NULL;
+    delete d_listener_thread;
+    d_listener_thread = NULL;
   }
 
   return true;
@@ -216,51 +221,46 @@ bool tcp_sink_impl::stop() {
 int tcp_sink_impl::work_test(int noutput_items,
                              gr_vector_const_void_star &input_items,
                              gr_vector_void_star &output_items) {
-  gr::thread::scoped_lock guard(d_mutex);
+  gr::thread::scoped_lock guard(d_setlock);
 
   const char *in = (const char *)input_items[0];
   unsigned int noi = noutput_items * d_block_size;
   int bytesWritten;
   int bytesRemaining = noi;
-  // send it.
-  // We could have done this async, however with guards and waits it has the
-  // same effect. It just doesn't get detected till the next frame.
-  // boost::asio::write(*tcpsocket, boost::asio::buffer(d_buf.get(),
-  // data_len),ec);
+
   ec.clear();
 
   while ((bytesRemaining > 0) && (!ec)) {
     bytesWritten = boost::asio::write(
-        *tcpsocket, boost::asio::buffer((const void *)in, noi), ec);
+        *d_tcpsocket, boost::asio::buffer((const void *)in, noi), ec);
     bytesRemaining -= bytesWritten;
   }
-
-  // writes happen a lot faster then reads.  To the point where it's overflowing
-  // the receiving buffer. So this delay is to purposefully slow it down.
-  // usleep(10);
 
   return noutput_items;
 }
 
-void tcp_sink_impl::checkForDisconnect() {
+void tcp_sink_impl::check_for_disconnect() {
   int bytesRead;
 
   char buff[1];
-  bytesRead = tcpsocket->receive(boost::asio::buffer(buff),
-                                 tcpsocket->message_peek, ec);
+  bytesRead = d_tcpsocket->receive(boost::asio::buffer(buff),
+                                   d_tcpsocket->message_peek, ec);
   if ((boost::asio::error::eof == ec) ||
       (boost::asio::error::connection_reset == ec)) {
-    std::cout << "[TCP Sink] Disconnect detected on " << d_host << ":" << d_port
-              << "." << std::endl;
-    tcpsocket->close();
-    delete tcpsocket;
-    tcpsocket = NULL;
+    std::stringstream msg;
+    msg << "Disconnect detected on " << d_host << ":" << d_port << ".";
+    GR_LOG_INFO(d_logger, msg.str());
+
+    d_tcpsocket->close();
+    delete d_tcpsocket;
+    d_tcpsocket = NULL;
 
     exit(1);
   } else {
     if (ec) {
-      std::cout << "[TCP Sink] Socket error " << ec << " detected."
-                << std::endl;
+      std::stringstream msg;
+      msg << "Socket error " << ec << " detected.";
+      GR_LOG_ERROR(d_logger, msg.str());
     }
   }
 }
@@ -268,7 +268,7 @@ void tcp_sink_impl::checkForDisconnect() {
 int tcp_sink_impl::work(int noutput_items,
                         gr_vector_const_void_star &input_items,
                         gr_vector_void_star &output_items) {
-  gr::thread::scoped_lock guard(d_mutex);
+  gr::thread::scoped_lock guard(d_setlock);
 
   if (!d_connected)
     return noutput_items;
@@ -277,11 +277,7 @@ int tcp_sink_impl::work(int noutput_items,
   unsigned int noi = noutput_items * d_block_size;
   int bytesWritten;
   int bytesRemaining = noi;
-  // send it.
-  // We could have done this async, however with guards and waits it has the
-  // same effect. It just doesn't get detected till the next frame.
-  // boost::asio::write(*tcpsocket, boost::asio::buffer(d_buf.get(),
-  // data_len),ec);
+
   ec.clear();
 
   char *pBuff;
@@ -289,40 +285,32 @@ int tcp_sink_impl::work(int noutput_items,
 
   while ((bytesRemaining > 0) && (!ec)) {
     bytesWritten = boost::asio::write(
-        *tcpsocket, boost::asio::buffer((const void *)pBuff, bytesRemaining),
+        *d_tcpsocket, boost::asio::buffer((const void *)pBuff, bytesRemaining),
         ec);
     bytesRemaining -= bytesWritten;
     pBuff += bytesWritten;
 
     if (ec == boost::asio::error::connection_reset ||
         ec == boost::asio::error::broken_pipe) {
-      // see
-      // http://stackoverflow.com/questions/3857272/boost-error-codes-reference
-      // for boost error codes
 
       // Connection was reset
       d_connected = false;
       bytesRemaining = 0;
 
       if (d_sinkmode == TCPSINKMODE_CLIENT) {
-        std::cout
-            << "[TCP Sink] Server closed the connection.  Stopping processing. "
-            << std::endl;
+        GR_LOG_WARN(d_logger,
+                    "Server closed the connection.  Stopping processing.");
 
         return WORK_DONE;
       } else {
-        std::cout
-            << "[TCP Sink] Client disconnected. Waiting for new connection."
-            << std::endl;
+        GR_LOG_INFO(d_logger,
+                    "Client disconnected. Waiting for new connection.");
+
         // start waiting for another connection
-        start_new_listener = true;
+        d_start_new_listener = true;
       }
     }
   }
-
-  // writes happen a lot faster then reads.  To the point where it's overflowing
-  // the receiving buffer. So this delay is to purposefully slow it down.
-  // usleep(100);
 
   return noutput_items;
 }
