@@ -712,19 +712,21 @@ int ByteComplexDecimator_impl::work(int noutput_items,
   const char *in = (const char *)input_items[0];
   char *out = (char *)output_items[0];
 
-  int i = 0;
+  long i = 0;
   int octr = 0;
 
-  while (octr < noutput_items) {
-    *out++ = in[i];
-    *out++ = in[i + 1];
+  long nin = noutput_items * decimation();
 
-    i += d_doubledecimation;
-    octr += 2;
+  while (i < nin) {
+      *out++ = in[i];
+      *out++ = in[i + 1];
+
+      i += d_doubledecimation;
+      octr += 2;
   }
 
   // Tell runtime system how many output items we produced.
-  return noutput_items;
+  return octr;
 }
 
 } /* namespace grnet */
