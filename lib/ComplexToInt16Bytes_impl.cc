@@ -681,6 +681,7 @@
 
 #include "ComplexToInt16Bytes_impl.h"
 #include <gnuradio/io_signature.h>
+#include <volk/volk.h>
 
 namespace gr {
 namespace grnet {
@@ -695,7 +696,10 @@ ComplexToInt16Bytes::sptr ComplexToInt16Bytes::make() {
 ComplexToInt16Bytes_impl::ComplexToInt16Bytes_impl()
     : gr::sync_interpolator("ComplexToInt16Bytes",
                             gr::io_signature::make(1, 1, sizeof(gr_complex)),
-                            gr::io_signature::make(1, 1, sizeof(char)), 4) {}
+                            gr::io_signature::make(1, 1, sizeof(char)), 4) {
+  const int alignment_multiple = volk_get_alignment() / sizeof(gr_complex);
+  set_alignment(std::max(1, alignment_multiple));
+}
 
 /*
  * Our virtual destructor.
@@ -706,12 +710,11 @@ int ComplexToInt16Bytes_impl::work(int noutput_items,
                                    gr_vector_const_void_star &input_items,
                                    gr_vector_void_star &output_items) {
   const float *in = (const float *)input_items[0];
-  int16_t *out = (int16_t *)output_items[0];
-  long numFloats = noutput_items * 2;
+  short *out = (short *)output_items[0];
 
-  for (int i = 0; i < numFloats; i++) {
-    *out++ = (int16_t)lrintf(*in++ * (float)SHRT_MAX);
-  }
+  // 4 bytes out for every 1 complex in, or 2 floats for every 4 bytes out.
+  // So num floats = noutput_items/2
+  volk_32f_s32f_convert_16i(out, in, (float)SHRT_MAX, noutput_items / 2);
 
   // Tell runtime system how many output items we produced.
   return noutput_items;

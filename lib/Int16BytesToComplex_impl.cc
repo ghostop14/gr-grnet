@@ -681,6 +681,7 @@
 
 #include "Int16BytesToComplex_impl.h"
 #include <gnuradio/io_signature.h>
+#include <volk/volk.h>
 
 namespace gr {
 namespace grnet {
@@ -695,7 +696,10 @@ Int16BytesToComplex::sptr Int16BytesToComplex::make() {
 Int16BytesToComplex_impl::Int16BytesToComplex_impl()
     : gr::sync_decimator("Int16BytesToComplex",
                          gr::io_signature::make(1, 1, sizeof(char)),
-                         gr::io_signature::make(1, 1, sizeof(gr_complex)), 4) {}
+                         gr::io_signature::make(1, 1, sizeof(gr_complex)), 4) {
+  const int alignment_multiple = volk_get_alignment() / sizeof(gr_complex);
+  set_alignment(std::max(1, alignment_multiple));
+}
 
 /*
  * Our virtual destructor.
@@ -705,15 +709,12 @@ Int16BytesToComplex_impl::~Int16BytesToComplex_impl() {}
 int Int16BytesToComplex_impl::work(int noutput_items,
                                    gr_vector_const_void_star &input_items,
                                    gr_vector_void_star &output_items) {
-  const int16_t *in = (const int16_t *)input_items[0];
+  const short *in = (const short *)input_items[0];
   float *out = (float *)output_items[0];
-  long incomingInts = noutput_items * 2; // each is a double pair
 
-  for (int i = 0; i < incomingInts; i++) {
-    *out++ = ((float)(*in++)) / (float)SHRT_MAX;
-  }
+  // Outputs are complex, so num floats = noutput_items*2
+  volk_16i_s32f_convert_32f(out, in, (float)SHRT_MAX, 2 * noutput_items);
 
-  // Tell runtime system how many output items we produced.
   return noutput_items;
 }
 

@@ -681,6 +681,7 @@
 
 #include "SC16ToComplex_impl.h"
 #include <gnuradio/io_signature.h>
+#include <volk/volk.h>
 
 namespace gr {
 namespace grnet {
@@ -694,8 +695,11 @@ SC16ToComplex::sptr SC16ToComplex::make() {
  */
 SC16ToComplex_impl::SC16ToComplex_impl()
     : gr::sync_decimator("SC16ToComplex",
-                         gr::io_signature::make(1, 1, sizeof(int16_t)),
-                         gr::io_signature::make(1, 1, sizeof(gr_complex)), 2) {}
+                         gr::io_signature::make(1, 1, sizeof(short)),
+                         gr::io_signature::make(1, 1, sizeof(gr_complex)), 2) {
+  const int alignment_multiple = volk_get_alignment() / sizeof(gr_complex);
+  set_alignment(std::max(1, alignment_multiple));
+}
 
 /*
  * Our virtual destructor.
@@ -705,15 +709,11 @@ SC16ToComplex_impl::~SC16ToComplex_impl() {}
 int SC16ToComplex_impl::work(int noutput_items,
                              gr_vector_const_void_star &input_items,
                              gr_vector_void_star &output_items) {
-  const int16_t *in = (const int16_t *)input_items[0];
+  const short *in = (const short *)input_items[0];
   float *out = (float *)output_items[0];
-  long incomingInts = noutput_items * 2; // each is a double pair
 
-  for (int i = 0; i < incomingInts; i++) {
-    *out++ = ((float)(*in++)) / (float)SHRT_MAX;
-  }
+  volk_16i_s32f_convert_32f(out, in, (float)SHRT_MAX, 2 * noutput_items);
 
-  // Tell runtime system how many output items we produced.
   return noutput_items;
 }
 

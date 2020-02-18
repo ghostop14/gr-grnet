@@ -681,6 +681,7 @@
 
 #include "Signed8ToComplex_impl.h"
 #include <gnuradio/io_signature.h>
+#include <volk/volk.h>
 
 namespace gr {
 namespace grnet {
@@ -695,7 +696,10 @@ Signed8ToComplex::sptr Signed8ToComplex::make() {
 Signed8ToComplex_impl::Signed8ToComplex_impl()
     : gr::sync_decimator("Signed8ToComplex",
                          gr::io_signature::make(1, 1, sizeof(char)),
-                         gr::io_signature::make(1, 1, sizeof(gr_complex)), 2) {}
+                         gr::io_signature::make(1, 1, sizeof(gr_complex)), 2) {
+  const int alignment_multiple = volk_get_alignment() / sizeof(gr_complex);
+  set_alignment(std::max(1, alignment_multiple));
+}
 
 /*
  * Our virtual destructor.
@@ -705,13 +709,11 @@ Signed8ToComplex_impl::~Signed8ToComplex_impl() {}
 int Signed8ToComplex_impl::work(int noutput_items,
                                 gr_vector_const_void_star &input_items,
                                 gr_vector_void_star &output_items) {
-  const signed char *in = (const signed char *)input_items[0];
   float *out = (float *)output_items[0];
-  long incomingBytes = noutput_items * 2; // Each is a double pair
+  const int8_t *in = (const int8_t *)input_items[0];
 
-  for (int i = 0; i < incomingBytes; i++) {
-    *out++ = ((float)(*in++)) / (float)SCHAR_MAX;
-  }
+  // This calculates in[] * 1.0 / d_scalar
+  volk_8i_s32f_convert_32f(out, in, (float)SCHAR_MAX, 2 * noutput_items);
 
   // Tell runtime system how many output items we produced.
   return noutput_items;
