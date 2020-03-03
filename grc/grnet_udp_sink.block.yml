@@ -34,17 +34,25 @@ parameters:
     dtype: enum
     options: ['False', 'True']
     option_labels: ['No', 'Yes']
+-   id: vlen
+    label: Vec Length
+    dtype: int
+    default: '1'
+    hide: ${ 'part' if vlen == 1 else 'none' }
 
 inputs:
 -   domain: stream
     dtype: ${ type }
+    vlen: ${ vlen }
+    
 asserts:
 - ${ port > 0 }
 - ${ payloadsize > 0 }
+- ${ vlen > 0 }
 
 templates:
     imports: import grnet
-    make: grnet.udp_sink(${type.size}, 1, ${addr}, ${port},${header},${payloadsize},${send_eof})
+    make: grnet.udp_sink(${type.size}, ${vlen}, ${addr}, ${port}, ${header}, ${payloadsize}, ${send_eof})
 
 documentation: "This block provides basic UDP data transmission capabilities with\
     \ a few additional features for processing in custom receiving applications. \

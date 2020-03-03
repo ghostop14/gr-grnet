@@ -44,14 +44,23 @@ parameters:
     options: ['False', 'True']
     option_labels: ['No', 'Yes']
     hide: part
+-   id: vlen
+    label: Vec Length
+    dtype: int
+    default: '1'
+    hide: ${ 'part' if vlen == 1 else 'none' }
 
 outputs:
 -   domain: stream
     dtype: ${ type }
+    vlen: ${ vlen }
+
+asserts:
+- ${ vlen > 0 }
 
 templates:
     imports: import grnet
-    make: grnet.udp_source(${type.size}, 1, ${port},${header},${payloadsize},${notifyMissed},${srcZeros},${ipv6})
+    make: grnet.udp_source(${type.size}, ${vlen}, ${port}, ${header}, ${payloadsize}, ${notifyMissed}, ${srcZeros}, ${ipv6})
 
 documentation: "This block listens for traffic on the specified UDP port and outputs\
     \ the specified data type.  Note that the header setting and payload size should\
