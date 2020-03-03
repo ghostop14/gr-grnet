@@ -45,7 +45,7 @@ public:
    * creating new instances.
    */
   static sptr make(size_t itemsize, size_t vecLen, int port, int headerType,
-                   int payloadsize, long udp_recv_buf_size, bool notifyMissed,
+                   int payloadsize, bool notifyMissed,
                    bool sourceZeros, bool ipv6);
 };
 

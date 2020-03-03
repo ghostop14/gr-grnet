@@ -52,7 +52,6 @@ protected:
   long d_udp_recv_buf_size;
 
   uint64_t d_seq_num;
-  unsigned char *localBuffer;
 
   boost::system::error_code ec;
 
@@ -64,13 +63,14 @@ protected:
 
   // A queue is required because we have 2 different timing
   // domains: The network packets and the GR work()/scheduler
-  boost::circular_buffer<unsigned char> *d_localqueue;
+  boost::circular_buffer<char> *d_localqueue;
+  char *localBuffer;
 
   uint64_t get_header_seqnum();
 
 public:
   udp_source_impl(size_t itemsize, size_t vecLen, int port, int headerType,
-                  int payloadsize, long udp_recv_buf_size, bool notifyMissed,
+                  int payloadsize, bool notifyMissed,
                   bool sourceZeros, bool ipv6);
   ~udp_source_impl();
 

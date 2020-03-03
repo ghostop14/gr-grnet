@@ -24,7 +24,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <grnet/udp_sink.h>
-#include <queue>
+#include <boost/circular_buffer.hpp>
 
 #include "packet_headers.h"
 
@@ -52,8 +52,8 @@ protected:
 
   // A queue is required because we have 2 different timing
   // domains: The network packets and the GR work()/scheduler
-  std::queue<char> d_localqueue;
-  unsigned char *d_localbuffer;
+  boost::circular_buffer<char>* d_localqueue;
+  char *d_localbuffer;
 
   boost::system::error_code ec;
 

@@ -32,18 +32,6 @@ options:
     state: enabled
 
 blocks:
-- name: center_freq
-  id: variable
-  parameters:
-    comment: ''
-    value: 1691e6
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [216, 28]
-    rotation: 0
-    state: enabled
 - name: samp_rate
   id: variable
   parameters:
@@ -53,41 +41,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [8, 160]
+    coordinate: [200, 4.0]
     rotation: 0
     state: enabled
-- name: blocks_message_debug_0
-  id: blocks_message_debug
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [888, 152]
-    rotation: 0
-    state: disabled
-- name: blocks_probe_rate_0
-  id: blocks_probe_rate
-  parameters:
-    affinity: ''
-    alias: ''
-    alpha: '0.15'
-    comment: ''
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    mintime: '500.0'
-    type: complex
-    vlen: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [616, 140]
-    rotation: 0
-    state: disabled
 - name: blocks_throttle_0
   id: blocks_throttle
   parameters:
@@ -113,11 +69,11 @@ blocks:
     affinity: ''
     alias: ''
     comment: ''
-    header: '0'
+    header: '1'
     ipv6: 'False'
     maxoutbuf: '0'
     minoutbuf: '0'
-    notifyMissed: 'False'
+    notifyMissed: 'True'
     payloadsize: '1472'
     port: '2001'
     srcZeros: 'False'
@@ -160,7 +116,7 @@ blocks:
     color9: '"dark green"'
     comment: ''
     ctrlpanel: 'False'
-    fc: center_freq
+    fc: '0'
     fftsize: '2048'
     freqhalf: 'True'
     grid: 'True'
@@ -211,8 +167,6 @@ blocks:
     state: enabled
 
 connections:
-- [blocks_probe_rate_0, rate, blocks_message_debug_0, print]
-- [blocks_throttle_0, '0', blocks_probe_rate_0, '0']
 - [blocks_throttle_0, '0', qtgui_freq_sink_x_0, '0']
 - [grnet_udp_source_0, '0', blocks_throttle_0, '0']
 

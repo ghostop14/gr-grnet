@@ -25,7 +25,6 @@
 #include "udp_sink_impl.h"
 #include <boost/array.hpp>
 #include <gnuradio/io_signature.h>
-#include <zlib.h>
 
 namespace gr {
 namespace grnet {
@@ -99,7 +98,21 @@ udp_sink_impl::udp_sink_impl(size_t itemsize, size_t vecLen,
   d_precomp_datasize = d_payloadsize - d_header_size;
   d_precomp_data_overitemsize = d_precomp_datasize / d_itemsize;
 
-  d_localbuffer = new unsigned char[d_payloadsize];
+  d_localbuffer = new char[d_payloadsize];
+
+  long max_circ_buffer;
+
+  // Let's keep it from getting too big
+  if (d_payloadsize < 2000) {
+      max_circ_buffer = d_payloadsize * 4000;
+  } else {
+      if (d_payloadsize < 5000)
+          max_circ_buffer = d_payloadsize * 2000;
+      else
+          max_circ_buffer = d_payloadsize * 1500;
+  }
+
+  d_localqueue = new boost::circular_buffer<char>(max_circ_buffer);
 
   d_udpsocket = new boost::asio::ip::udp::socket(d_io_service);
 
@@ -171,6 +184,11 @@ bool udp_sink_impl::stop() {
     d_localbuffer = NULL;
   }
 
+  if (d_localqueue) {
+      delete d_localqueue;
+      d_localqueue = NULL;
+  }
+
   return true;
 }
 
@@ -210,51 +228,51 @@ void udp_sink_impl::build_header() {
 int udp_sink_impl::work_test(int noutput_items,
                              gr_vector_const_void_star &input_items,
                              gr_vector_void_star &output_items) {
-  gr::thread::scoped_lock guard(d_setlock);
+	  gr::thread::scoped_lock guard(d_setlock);
 
-  long numBytesToTransmit = noutput_items * d_block_size;
-  const char *in = (const char *)input_items[0];
+	  long numBytesToTransmit = noutput_items * d_block_size;
+	  const char *in = (const char *)input_items[0];
 
-  // Build a long local queue to pull from so we can break it up easier
-  for (int i = 0; i < numBytesToTransmit; i++) {
-    d_localqueue.push(in[i]);
-  }
+	  // Build a long local queue to pull from so we can break it up easier
+	  for (int i = 0; i < numBytesToTransmit; i++) {
+	    d_localqueue->push_back(in[i]);
+	  }
 
-  // Local boost buffer for transmitting
-  std::vector<boost::asio::const_buffer> transmitbuffer;
+	  // Local boost buffer for transmitting
+	  std::vector<boost::asio::const_buffer> transmitbuffer;
 
-  // Let's see how many blocks are in the buffer
-  int bytesAvailable = d_localqueue.size();
-  long blocksAvailable = bytesAvailable / d_precomp_datasize;
+	  // Let's see how many blocks are in the buffer
+	  int bytesAvailable = d_localqueue->size();
+	  long blocksAvailable = bytesAvailable / d_precomp_datasize;
 
-  for (int curBlock = 0; curBlock < blocksAvailable; curBlock++) {
-    // Clear the next transmit buffer
-    transmitbuffer.clear();
+	  for (int curBlock = 0; curBlock < blocksAvailable; curBlock++) {
+	    // Clear the next transmit buffer
+	    transmitbuffer.clear();
 
-    // build our next header if we need it
-    if (d_header_type != HEADERTYPE_NONE) {
-      build_header();
+	    // build our next header if we need it
+	    if (d_header_type != HEADERTYPE_NONE) {
+	      build_header();
 
-      transmitbuffer.push_back(
-          boost::asio::buffer((const void *)d_tmpheaderbuff, d_header_size));
-    }
+	      transmitbuffer.push_back(
+	          boost::asio::buffer((const void *)d_tmpheaderbuff, d_header_size));
+	    }
 
-    // Fill the data buffer
-    for (int i = 0; i < d_precomp_datasize; i++) {
-      d_localbuffer[i] = d_localqueue.front();
-      d_localqueue.pop();
-    }
+	    // Fill the data buffer
+	    for (int i = 0; i < d_precomp_datasize; i++) {
+	      d_localbuffer[i] = d_localqueue->at(0);
+	      d_localqueue->pop_front();
+	    }
 
-    // Set up for transmit
-    transmitbuffer.push_back(
-        boost::asio::buffer((const void *)d_localbuffer, d_precomp_datasize));
+	    // Set up for transmit
+	    transmitbuffer.push_back(
+	        boost::asio::buffer((const void *)d_localbuffer, d_precomp_datasize));
 
-    // Send
-    d_udpsocket->send_to(transmitbuffer, d_endpoint);
-  }
+	    // Send
+	    d_udpsocket->send_to(transmitbuffer, d_endpoint);
+	  }
 
-  int itemsreturned = blocksAvailable * d_precomp_data_overitemsize;
-  return itemsreturned;
+	  int itemsreturned = blocksAvailable * d_precomp_data_overitemsize;
+	  return itemsreturned;
 }
 
 int udp_sink_impl::work(int noutput_items,
@@ -267,14 +285,14 @@ int udp_sink_impl::work(int noutput_items,
 
   // Build a long local queue to pull from so we can break it up easier
   for (int i = 0; i < numBytesToTransmit; i++) {
-    d_localqueue.push(in[i]);
+    d_localqueue->push_back(in[i]);
   }
 
   // Local boost buffer for transmitting
   std::vector<boost::asio::const_buffer> transmitbuffer;
 
   // Let's see how many blocks are in the buffer
-  int bytesAvailable = d_localqueue.size();
+  int bytesAvailable = d_localqueue->size();
   long blocksAvailable = bytesAvailable / d_precomp_datasize;
 
   for (int curBlock = 0; curBlock < blocksAvailable; curBlock++) {
@@ -291,8 +309,8 @@ int udp_sink_impl::work(int noutput_items,
 
     // Fill the data buffer
     for (int i = 0; i < d_precomp_datasize; i++) {
-      d_localbuffer[i] = d_localqueue.front();
-      d_localqueue.pop();
+      d_localbuffer[i] = d_localqueue->at(0);
+      d_localqueue->pop_front();
     }
 
     // Set up for transmit

@@ -31,11 +31,11 @@ namespace grnet {
 
 udp_source::sptr udp_source::make(size_t itemsize, size_t vecLen, int port,
                                   int headerType, int payloadsize,
-                                  long udp_recv_buf_size, bool notifyMissed,
+                                  bool notifyMissed,
                                   bool sourceZeros, bool ipv6) {
   return gnuradio::get_initial_sptr(
       new udp_source_impl(itemsize, vecLen, port, headerType, payloadsize,
-                          udp_recv_buf_size, notifyMissed, sourceZeros, ipv6));
+                          notifyMissed, sourceZeros, ipv6));
 }
 
 /*
@@ -43,13 +43,10 @@ udp_source::sptr udp_source::make(size_t itemsize, size_t vecLen, int port,
  */
 udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
                                  int headerType, int payloadsize,
-                                 long udp_recv_buf_size, bool notifyMissed,
+                                 bool notifyMissed,
                                  bool sourceZeros, bool ipv6)
     : gr::sync_block("udp_source", gr::io_signature::make(0, 0, 0),
                      gr::io_signature::make(1, 1, itemsize * vecLen)) {
-
-  d_udp_recv_buf_size = udp_recv_buf_size;
-
   is_ipv6 = ipv6;
 
   d_itemsize = itemsize;
@@ -104,7 +101,7 @@ udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
   d_precompDataSize = d_payloadsize - d_header_size;
   d_precompDataOverItemSize = d_precompDataSize / d_itemsize;
 
-  localBuffer = new unsigned char[d_payloadsize];
+  localBuffer = new char[d_payloadsize];
   long maxCircBuffer;
 
   // Let's keep it from getting too big
@@ -117,7 +114,7 @@ udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
       maxCircBuffer = d_payloadsize * 1500;
   }
 
-  d_localqueue = new boost::circular_buffer<unsigned char>(maxCircBuffer);
+  d_localqueue = new boost::circular_buffer<char>(maxCircBuffer);
 
   if (is_ipv6)
     d_endpoint =
@@ -133,20 +130,16 @@ udp_source_impl::udp_source_impl(size_t itemsize, size_t vecLen, int port,
                              ex.what());
   }
 
-  // Make sure we have a big enough buffer
-  boost::asio::socket_base::receive_buffer_size option(d_udp_recv_buf_size);
-  d_udpsocket->set_option(option);
+  int out_multiple = (d_payloadsize - d_header_size) / d_block_size;
 
-  int outMultiple = (d_payloadsize - d_header_size) / d_block_size;
-
-  if (outMultiple == 1)
-    outMultiple = 2; // Ensure we get pairs, for instance complex -> ichar pairs
+  if (out_multiple == 1)
+	  out_multiple = 2; // Ensure we get pairs, for instance complex -> ichar pairs
 
   std::stringstream msg_stream;
   msg_stream << "Listening for data on UDP port " << port << ".";
   GR_LOG_INFO(d_logger, msg_stream.str());
 
-  gr::block::set_output_multiple(outMultiple);
+  gr::block::set_output_multiple(out_multiple);
 }
 
 /*
@@ -232,7 +225,7 @@ int udp_source_impl::work_test(int noutput_items,
   static int underRunCounter = 0;
 
   int bytesAvailable = netdata_available();
-  unsigned char *out = (unsigned char *)output_items[0];
+  char *out = (char *)output_items[0];
   unsigned int numRequested = noutput_items * d_block_size;
 
   // quick exit if nothing to do
@@ -315,7 +308,7 @@ int udp_source_impl::work_test(int noutput_items,
   // We're going to have to read the data out in blocks, account for the header,
   // then just move the data part into the out[] array.
 
-  unsigned char *pData;
+  char *pData;
   pData = &localBuffer[d_header_size];
   int outIndex = 0;
   int skippedPackets = 0;
@@ -374,7 +367,7 @@ int udp_source_impl::work(int noutput_items,
   static int underRunCounter = 0;
 
   int bytesAvailable = netdata_available();
-  unsigned char *out = (unsigned char *)output_items[0];
+  char *out = (char *)output_items[0];
   unsigned int numRequested = noutput_items * d_block_size;
 
   // quick exit if nothing to do
@@ -480,7 +473,7 @@ int udp_source_impl::work(int noutput_items,
   // We're going to have to read the data out in blocks, account for the header,
   // then just move the data part into the out[] array.
 
-  unsigned char *pData;
+  char *pData;
   pData = &localBuffer[d_header_size];
   int outIndex = 0;
   int skippedPackets = 0;

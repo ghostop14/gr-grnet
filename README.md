@@ -34,19 +34,15 @@ make install
 
 ldconfig
 
-Also, if you plan on using the UDP source block, it is strongly recommended that you increase the kernel buffer sizes for UDP packets.  You can do this by adding the following lines to /etc/sysctl.conf and rebooting:
+Also, if you plan on using the UDP blocks, it is strongly recommended that you increase the kernel buffer sizes for UDP packets.  You can do this by adding the following lines to /etc/sysctl.conf and rebooting (note setting within the running session with systcl -w will not work, you have to reboot):
 
 net.core.rmem_default=26214400
 
-net.core.rmem_max = 104857600
+net.core.rmem_max=104857600
 
+net.core.wmem_default=65536
 
-They can also be changed within the current running session using the following commands (however, without adding them to sysctl.conf they will not survive a reboot):
-
-sudo sysctl -w net.core.rmem_default=26214400
-
-sudo sysctl -w net.core.rmem_max = 104857600
-
+net.core.wmem_max=104857600
 
 ## Performance
 Throughput is always important.  Each was measured against a local 127.0.0.1 listener on port 2000.  The following metrics were generated (the module installs a test-netsink command-line tool that can be used to test your own performance.  

@@ -28,11 +28,6 @@ parameters:
     dtype: int
     default: '1472'
     hide: part
--   id: recv_buff_size
-    label: Receive Buffer Size
-    dtype: int
-    default: '1048576'
-    hide: part
 -   id: notifyMissed
     label: Notify Missed Frames
     dtype: enum
@@ -56,7 +51,7 @@ outputs:
 
 templates:
     imports: import grnet
-    make: grnet.udp_source(${type.size}, 1, ${port},${header},${payloadsize},${recv_buff_size}, ${notifyMissed},${srcZeros},${ipv6})
+    make: grnet.udp_source(${type.size}, 1, ${port},${header},${payloadsize},${notifyMissed},${srcZeros},${ipv6})
 
 documentation: "This block listens for traffic on the specified UDP port and outputs\
     \ the specified data type.  Note that the header setting and payload size should\
