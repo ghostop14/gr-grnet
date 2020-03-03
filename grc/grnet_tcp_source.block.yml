@@ -45,11 +45,15 @@ templates:
     make: "grnet.tcp_source.tcp_source(\n\titemsize=${type.size}*${vlen},\n\taddr=${addr},\n\
         \tport=${port},\n\tserver=${server},\n)"
 
-documentation: "NOTE: This block is the original GNU Radio TCP Source block, incorporated\
-    \ here due to deprecation.  Attempts were made to rewrite this block with boost,\
-    \ however boost would lose data and the root cause was never uncovered.  May be\
-    \ why GNU Radio chose to implement this in Python as well.\n\t\nIn client mode,\
-    \ we attempt to connect to a server at the given address and port. In server mode,\
-    \ we bind a socket to the given address and port and accept the first client."
+documentation: "This block supports TCP connections in both server (listening for inbound\
+    \ connections) and client mode (initiating connections to other systems as a client).\
+    \ In client mode,the block connects to a server at the given address and port. \
+    \ In server mode, the block starts a local listener on the given port and accepts \
+    \ the first client connection.\n\n\
+    \ This block does support IPv6 addresses.  If an IPv6 address\
+    \ is detected as the destination IP address, the block will automatically\
+    \ adjust for proper connection.  Just make sure your IPv6 stack is enabled.\
+    \ To listen in server mode for both IPv4 and IPv6, use :: as the address. \
+    \ To connect to IPv6 localhost use ::1 as the address."
 
 file_format: 1

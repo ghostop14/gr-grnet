@@ -46,4 +46,15 @@ templates:
     imports: import grnet
     make: grnet.tcp_sink(${type.size}, ${vlen}, ${addr}, ${port},${mode})
 
+documentation: "This block supports TCP connections in both server (listening for inbound\
+    \ connections) and client mode (initiating connections to other systems as a client).\
+    \ In client mode,the block connects to a server at the given address and port. \
+    \ In server mode, the block starts a local listener on the given port and accepts \
+    \ the first client connection.\n\n\
+    \ This block does support IPv6 addresses.  If an IPv6 address\
+    \ is detected as the destination IP address, the block will automatically\
+    \ adjust for proper connection.  Just make sure your IPv6 stack is enabled.\
+    \ To listen in server mode for both IPv4 and IPv6, use :: as the address. \
+    \ To connect to IPv6 localhost use ::1 as the address."
+    
 file_format: 1
