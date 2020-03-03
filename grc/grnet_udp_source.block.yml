@@ -22,7 +22,7 @@ parameters:
     dtype: enum
     options: ['0', '1', '2', '4', '5']
     option_labels: [None, 64-bit Sequence Number, Sequence + 16-bit data size, 'CHDR
-            (64-bit, no timestamp)', Old ATA Header]
+            (64-bit, no timestamp)', ATA Header]
 -   id: payloadsize
     label: UDP Packet Data Size
     dtype: int
