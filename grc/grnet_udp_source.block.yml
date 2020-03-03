@@ -43,7 +43,6 @@ parameters:
     dtype: enum
     options: ['False', 'True']
     option_labels: ['No', 'Yes']
-    hide: part
 -   id: vlen
     label: Vec Length
     dtype: int
@@ -68,7 +67,7 @@ documentation: "This block listens for traffic on the specified UDP port and out
     \ of 1472 (1500-28 for UDP headers) represents the max size for a standard UDP\
     \ packet.  For a Jumbo frames 8972 can be used (9000-28).  Be careful adjusting\
     \ this parameter as you could inadvertently cause unnecessary packet fragmentation\
-    \ and reconstruction.\n\t\n\tIf you need the block to generate 0s when theres\
+    \ and reconstruction.\n\t\n\tIf you need the block to generate 0s when there is\
     \ no UDP data, you can turn on the 'Src 0s If No Data' flag, however this is best\
     \ paired with the grnet UDP sink block.  If using a separate application, problems\
     \ can arise if the sending application is not calling its send function with blocks\
