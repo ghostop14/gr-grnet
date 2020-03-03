@@ -64,6 +64,13 @@ documentation: "This block listens for traffic on the specified UDP port and out
     \ paired with the grnet UDP sink block.  If using a separate application, problems\
     \ can arise if the sending application is not calling its send function with blocks\
     \ matching payload size (the logic here can get a 'partial' packet after starting\
-    \ and not continue to produce zeros)."
+    \ and not continue to produce zeros).\n\n\
+    \ NOTE:\n\
+    \ For best performance and to ensure UDP packets are not dropped, add the following\
+    \ lines to your /etc/sysctl.conf and reboot (the reboot is required)\n\n\
+    \ net.core.rmem_default=26214400\n\
+    \ net.core.rmem_max=104857600\n\
+    \ net.core.wmem_default=65536\n\
+    \ net.core.wmem_max=104857600"
 
 file_format: 1
