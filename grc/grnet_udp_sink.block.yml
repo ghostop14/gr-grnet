@@ -60,15 +60,23 @@ documentation: "This block provides basic UDP data transmission capabilities wit
     \ also provide a sequence number that can be used to identify gaps in packets.\
     \  \nNote that payload size impacts the overall size of a single UDP packet. \
     \ For a normal network, a payload size of 1472 (1500-28 for UDP headers) represents\
-    \ the max size for a standard UDP packet.  \nFor a Jumbo frames 8972 can be used\
+    \ the max size for a standard UDP packet. For a Jumbo frames 8972 can be used\
     \ (9000-28).  Be careful adjusting this parameter as you could inadvertently cause\
     \ unnecessary packet fragmentation and reconstruction.\n\n\
-    \ NOTE:\n\
+    \ NOTES:\n\
+    \ This block does support connecting to IPv6 addresses.  If an IPv6 address\
+    \ is detected as the destination IP address, the block will automatically\
+    \ adjust for proper connection.  Just make sure your IPv6 stack is enabled.\n\n\
     \ For best performance and to ensure UDP packets are not dropped, add the following\
-    \ lines to your /etc/sysctl.conf and reboot (the reboot is required)\n\n\
+    \ lines to your /etc/sysctl.conf and reboot (the reboot is required).\n\n\
     \ net.core.rmem_default=26214400\n\
     \ net.core.rmem_max=104857600\n\
     \ net.core.wmem_default=65536\n\
-    \ net.core.wmem_max=104857600"
+    \ net.core.wmem_max=104857600\n\n\
+    \ IT IS HIGHLY RECOMMENDED that the example test_udp_source/sink flowgraphs be\
+    \ tested with the sequence number header enabled (the default in those flowgraphs)\
+    \ as a validation that no network or IP stack bottlenecks may cause dropped packets\
+    \ at the rates planned in your environment before using in production, especially if\
+    \ headers will not be used in your environment to track dropped packets."
 
 file_format: 1

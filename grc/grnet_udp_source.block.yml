@@ -67,7 +67,7 @@ documentation: "This block listens for traffic on the specified UDP port and out
     \ of 1472 (1500-28 for UDP headers) represents the max size for a standard UDP\
     \ packet.  For a Jumbo frames 8972 can be used (9000-28).  Be careful adjusting\
     \ this parameter as you could inadvertently cause unnecessary packet fragmentation\
-    \ and reconstruction.\n\t\n\tIf you need the block to generate 0s when there is\
+    \ and reconstruction.\n\nIf you need the block to generate 0s when there is\
     \ no UDP data, you can turn on the 'Src 0s If No Data' flag, however this is best\
     \ paired with the grnet UDP sink block.  If using a separate application, problems\
     \ can arise if the sending application is not calling its send function with blocks\
@@ -75,10 +75,15 @@ documentation: "This block listens for traffic on the specified UDP port and out
     \ and not continue to produce zeros).\n\n\
     \ NOTE:\n\
     \ For best performance and to ensure UDP packets are not dropped, add the following\
-    \ lines to your /etc/sysctl.conf and reboot (the reboot is required)\n\n\
+    \ lines to your /etc/sysctl.conf and reboot (the reboot is required).\n\n\
     \ net.core.rmem_default=26214400\n\
     \ net.core.rmem_max=104857600\n\
     \ net.core.wmem_default=65536\n\
-    \ net.core.wmem_max=104857600"
+    \ net.core.wmem_max=104857600\n\n\
+    \ IT IS HIGHLY RECOMMENDED that the example test_udp_source/sink flowgraphs be\
+    \ tested with the sequence number header enabled (the default in those flowgraphs)\
+    \ as a validation that no network or IP stack bottlenecks may cause dropped packets\
+    \ at the rates planned in your environment before using in production, especially if\
+    \ headers will not be used in your environment to track dropped packets."
 
 file_format: 1
