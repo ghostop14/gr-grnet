@@ -28,21 +28,37 @@ namespace gr {
 namespace grnet {
 
 /*!
- * \brief <+description of block+>
+ * \brief This block provides a UDP source block that starts a
+ * listener on the specified port and waits for inbound UDP packets.
  * \ingroup grnet
  *
+ * \details
+ * This block provides a UDP source that supports receiving data over
+ * a UDP stream from external applications.  A number of header formats
+ * are supported including None (raw stream), and other header formats
+ * that allow for sequence numbers to be tracked.  This feature allows
+ * the flowgraph to be aware of any frames dropped in transit or by
+ * its receiving stack.  However, this needs to be appropriately
+ * paired with the sending application (it needs to send the same
+ * header).  The UDP packet size can also be adjusted
+ * to support jumbo frames.  For most networks, 1472 is the correct
+ * UDP data packet size that optimizes network transmission.  Adjusting
+ * this value without a full understanding of the network implications
+ * can create additional network fragmentation and inefficient packet
+ * usage so should be avoided.  For networks and endpoints supporting
+ * jumbo frames of 9000, 8972 would be the appropriate size
+ * (9000 - 28 header bytes).  This block does support IPv4 only or
+ * dual stack IPv4/IPv6 listening as an endpoint with an enable
+ * IPv6 option that can be set on the block properties page.  It can
+ * also be set to source zeros (no signal) in the event no data
+ * is being received.
  */
 class GRNET_API udp_source : virtual public gr::sync_block {
 public:
   typedef boost::shared_ptr<udp_source> sptr;
 
   /*!
-   * \brief Return a shared_ptr to a new instance of grnet::udp_source.
-   *
-   * To avoid accidental use of raw pointers, grnet::udp_source's
-   * constructor is in a private implementation
-   * class. grnet::udp_source::make is the public interface for
-   * creating new instances.
+   * Build a udp_source block.
    */
   static sptr make(size_t itemsize, size_t vecLen, int port, int headerType,
                    int payloadsize, bool notifyMissed,

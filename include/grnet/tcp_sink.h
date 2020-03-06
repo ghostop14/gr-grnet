@@ -31,21 +31,26 @@ namespace gr {
 namespace grnet {
 
 /*!
- * \brief <+description of block+>
+ * \brief This block provides a TCP Sink block that supports
+ * both client and server modes.
  * \ingroup grnet
  *
+ * \details
+ * This block provides a TCP sink that supports both listening for
+ * inbound connections (server mode) and connecting to other applications
+ * (client mode) in order to send data from a GNU Radio flowgraph.
+ * The block supports both IPv4 and IPv6 with appropriate code determined
+ * by the address used.  In server mode, if a client disconnects, the
+ * flowgraph will continue to execute.  If/when a new client connection
+ * is established, data will then pick up with the current stream for
+ * transmission to the new client.
  */
 class GRNET_API tcp_sink : virtual public gr::sync_block {
 public:
   typedef boost::shared_ptr<tcp_sink> sptr;
 
   /*!
-   * \brief Return a shared_ptr to a new instance of grnet::tcp_sink.
-   *
-   * To avoid accidental use of raw pointers, grnet::tcp_sink's
-   * constructor is in a private implementation
-   * class. grnet::tcp_sink::make is the public interface for
-   * creating new instances.
+   * Build a tcp_sink block.
    */
   static sptr make(size_t itemsize, size_t vecLen, const std::string &host,
                    int port, int sinkMode);
