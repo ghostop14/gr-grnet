@@ -60,7 +60,7 @@ documentation: "This block provides basic UDP data transmission capabilities wit
     \ also provide a sequence number that can be used to identify gaps in packets.\
     \  \nNote that payload size impacts the overall size of a single UDP packet. \
     \ For a normal network, a payload size of 1472 (1500-28 for UDP headers) represents\
-    \ the max size for a standard UDP packet. For a Jumbo frames 8972 can be used\
+    \ the max size for a standard UDP packet. For jumbo frames, 8972 can be used\
     \ (9000-28).  Be careful adjusting this parameter as you could inadvertently cause\
     \ unnecessary packet fragmentation and reconstruction.\n\n\
     \ NOTES:\n\

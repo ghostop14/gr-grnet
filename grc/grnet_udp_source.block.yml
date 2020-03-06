@@ -65,7 +65,7 @@ documentation: "This block listens for traffic on the specified UDP port and out
     \ the specified data type.  Note that the header setting and payload size should\
     \ match on both the sender and receiver.  For a normal network, a payload size\
     \ of 1472 (1500-28 for UDP headers) represents the max size for a standard UDP\
-    \ packet.  For a Jumbo frames 8972 can be used (9000-28).  Be careful adjusting\
+    \ packet.  For jumbo frames, 8972 can be used (9000-28).  Be careful adjusting\
     \ this parameter as you could inadvertently cause unnecessary packet fragmentation\
     \ and reconstruction.\n\nIf you need the block to generate 0s when there is\
     \ no UDP data, you can turn on the 'Src 0s If No Data' flag, however this is best\
