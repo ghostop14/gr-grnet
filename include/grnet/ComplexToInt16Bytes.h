@@ -34,7 +34,7 @@ namespace grnet {
  */
 class GRNET_API ComplexToInt16Bytes : virtual public gr::sync_interpolator {
 public:
-  typedef boost::shared_ptr<ComplexToInt16Bytes> sptr;
+  typedef std::shared_ptr<ComplexToInt16Bytes> sptr;
 
   /*!
    * \brief Return a shared_ptr to a new instance of grnet::ComplexToInt16Bytes.

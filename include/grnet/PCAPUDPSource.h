@@ -34,7 +34,7 @@ namespace grnet {
  */
 class GRNET_API PCAPUDPSource : virtual public gr::sync_block {
 public:
-  typedef boost::shared_ptr<PCAPUDPSource> sptr;
+  typedef std::shared_ptr<PCAPUDPSource> sptr;
 
   /*!
    * \brief Return a shared_ptr to a new instance of grnet::PCAPUDPSource.

@@ -34,7 +34,7 @@ namespace grnet {
  */
 class GRNET_API IShortToSC16 : virtual public gr::sync_decimator {
 public:
-  typedef boost::shared_ptr<IShortToSC16> sptr;
+  typedef std::shared_ptr<IShortToSC16> sptr;
 
   /*!
    * \brief Return a shared_ptr to a new instance of grnet::IShortToSC16.
