@@ -188,9 +188,13 @@ void PCAPUDPSource_impl::runThread() {
       timeval diff;
       timersub(&header.ts, &tv, &diff);
       tv = header.ts;
-      const double delay = diff.tv_sec * 1000000 + diff.tv_usec;
-      if (delay > 0.0)
-        usleep(delay);
+
+      /* This delay was causing too much slow-down.
+      unsigned int delay_as_micro = diff.tv_sec*1000000 + diff.tv_usec; // (diff.tv_sec + diff.tv_usec / 1e6)*1e6;
+
+      if (delay_as_micro > 0)
+        usleep(delay_as_micro/1000); // there's lots of work below, so full sleep from the packet is too long.
+	  */
 
       uint16_t destPort = ntohs(udp->dest);
 
@@ -209,10 +213,11 @@ void PCAPUDPSource_impl::runThread() {
         }
       }
 
+
       // Monitor that we don't get too backed up.
       while (!stopThread && netDataAvailable() > maxQueueSize) {
         // Just in case we're running fast, let the system catch up.
-        usleep(100);
+        usleep(20);
       }
 
       if (stopThread)
