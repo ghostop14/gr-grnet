@@ -34,7 +34,7 @@ namespace grnet {
  */
 class GRNET_API Int16BytesToComplex : virtual public gr::sync_decimator {
 public:
-  typedef boost::shared_ptr<Int16BytesToComplex> sptr;
+  typedef std::shared_ptr<Int16BytesToComplex> sptr;
 
   /*!
    * \brief Return a shared_ptr to a new instance of grnet::Int16BytesToComplex.

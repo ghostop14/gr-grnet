@@ -34,7 +34,7 @@ namespace grnet {
  */
 class GRNET_API SC16ToIShort : virtual public gr::sync_interpolator {
 public:
-  typedef boost::shared_ptr<SC16ToIShort> sptr;
+  typedef std::shared_ptr<SC16ToIShort> sptr;
 
   /*!
    * \brief Return a shared_ptr to a new instance of grnet::SC16ToIShort.

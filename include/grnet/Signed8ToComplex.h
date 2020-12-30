@@ -34,7 +34,7 @@ namespace grnet {
  */
 class GRNET_API Signed8ToComplex : virtual public gr::sync_decimator {
 public:
-  typedef boost::shared_ptr<Signed8ToComplex> sptr;
+  typedef std::shared_ptr<Signed8ToComplex> sptr;
 
   /*!
    * \brief Return a shared_ptr to a new instance of grnet::Signed8ToComplex.

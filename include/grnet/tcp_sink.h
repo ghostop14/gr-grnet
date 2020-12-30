@@ -47,7 +47,7 @@ namespace grnet {
  */
 class GRNET_API tcp_sink : virtual public gr::sync_block {
 public:
-  typedef boost::shared_ptr<tcp_sink> sptr;
+  typedef std::shared_ptr<tcp_sink> sptr;
 
   /*!
    * Build a tcp_sink block.

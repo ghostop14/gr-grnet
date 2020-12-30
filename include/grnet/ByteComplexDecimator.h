@@ -691,7 +691,7 @@ namespace grnet {
  */
 class GRNET_API ByteComplexDecimator : virtual public gr::sync_decimator {
 public:
-  typedef boost::shared_ptr<ByteComplexDecimator> sptr;
+  typedef std::shared_ptr<ByteComplexDecimator> sptr;
 
   /*!
    * \brief Return a shared_ptr to a new instance of

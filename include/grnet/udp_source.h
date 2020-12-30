@@ -55,7 +55,7 @@ namespace grnet {
  */
 class GRNET_API udp_source : virtual public gr::sync_block {
 public:
-  typedef boost::shared_ptr<udp_source> sptr;
+  typedef std::shared_ptr<udp_source> sptr;
 
   /*!
    * Build a udp_source block.

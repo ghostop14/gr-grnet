@@ -34,7 +34,7 @@ namespace grnet {
  */
 class GRNET_API BytesToSC16 : virtual public gr::sync_decimator {
 public:
-  typedef boost::shared_ptr<BytesToSC16> sptr;
+  typedef std::shared_ptr<BytesToSC16> sptr;
 
   /*!
    * \brief Return a shared_ptr to a new instance of grnet::BytesToSC16.
