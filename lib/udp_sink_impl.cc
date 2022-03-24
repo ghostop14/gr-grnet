@@ -24,6 +24,7 @@
 
 #include "udp_sink_impl.h"
 #include <boost/array.hpp>
+#include <boost/format.hpp>
 #include <gnuradio/io_signature.h>
 
 namespace gr {
