@@ -24,7 +24,7 @@
 
 #include "tcp_sink_impl.h"
 #include <gnuradio/io_signature.h>
-
+#include <boost/format.hpp>
 #include <sstream>
 
 namespace gr {
