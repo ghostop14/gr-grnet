@@ -47,6 +47,7 @@ def _get_sock_fd(addr, port, server):
 
     if server:
         try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             if is_ipv6:
                 bind_addr = addr.replace("::ffff:", "")
                 sock.bind((bind_addr, port))
