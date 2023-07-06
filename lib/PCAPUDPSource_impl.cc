@@ -169,17 +169,17 @@ void PCAPUDPSource_impl::runThread() {
       if (ntohs(eth->ether_type) != ETHERTYPE_IP) {
         continue;
       }
-      auto ip = reinterpret_cast<const iphdr *>(p + sizeof(ether_header));
-      if (ip->version != 4) {
+      auto ip = reinterpret_cast<const struct ip *>(p + sizeof(ether_header));
+      if (ip->ip_v != 4) {
         continue;
       }
-      if (ip->protocol != IPPROTO_UDP) {
+      if (ip->ip_p != IPPROTO_UDP) {
         continue;
       }
 
       // IP Header length is defined in a packet field (IHL).  IHL represents
       // the # of 32-bit words So header size is ihl * 4 [bytes]
-      int etherIPHeaderSize = sizeof(ether_header) + ip->ihl * 4;
+      int etherIPHeaderSize = sizeof(ether_header) + ip->ip_hl * 4;
 
       auto udp = reinterpret_cast<const udphdr *>(p + etherIPHeaderSize);
       if (tv.tv_sec == 0) {
@@ -194,11 +194,11 @@ void PCAPUDPSource_impl::runThread() {
       if (delay_as_micro > 0)
         usleep(delay_as_micro);
 
-      uint16_t destPort = ntohs(udp->dest);
+      uint16_t destPort = ntohs(udp->uh_dport);
 
       if (destPort == d_port) {
         matchingPackets++;
-        size_t len = ntohs(udp->len) - sizeUDPHeader;
+        size_t len = ntohs(udp->uh_ulen) - sizeUDPHeader;
 
         if (len > 0) {
           const u_char *pData = &p[etherIPHeaderSize + sizeUDPHeader];
